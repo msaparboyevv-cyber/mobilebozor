@@ -1,0 +1,6 @@
+{
+  "name": "MobileBozor - Telefon Sotish va Sotib Olish",
+  "description": "Smartfonlarni qulay sotish, yangi va ikkilamchi telefonlarni arzon narxda sotib olish hamda tezkor Trade-in platformasi.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
