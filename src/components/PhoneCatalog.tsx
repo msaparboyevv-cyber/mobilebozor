@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { PhoneListing, StorageOption, PhoneCategory } from '../types';
-import { PHONE_CATEGORIES, CITIES_OF_UZBEKISTAN } from '../data/mockPhones';
+import { PhoneListing, PhoneCategory, PhoneCondition } from '../types';
+import { filterPhoneListings, PhoneSort } from '../utils/phoneFilters';
+import { getPhoneRecommendations } from '../utils/recommendations';
+import { PHONE_CATEGORIES } from '../data/mockPhones';
 import { PhoneCard } from './PhoneCard';
 import { 
   Search, 
@@ -32,6 +34,7 @@ interface PhoneCatalogProps {
   comparingPhoneIds: string[];
   onToggleCompare: (phone: PhoneListing) => void;
   favoriteIds: string[];
+  viewCounts: Record<string, number>;
   onToggleFavorite: (id: string) => void;
   onOpenSellModal: () => void;
   selectedCity?: string;
@@ -42,6 +45,8 @@ interface PhoneCatalogProps {
   onSelectCategory?: (cat: PhoneCategory | 'all') => void;
   isCatalogModalOpen?: boolean;
   setIsCatalogModalOpen?: (open: boolean) => void;
+  searchQuery?: string;
+  onSearchQueryChange?: (query: string) => void;
 }
 
 export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
@@ -52,6 +57,7 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
   comparingPhoneIds,
   onToggleCompare,
   favoriteIds,
+  viewCounts,
   onToggleFavorite,
   onOpenSellModal,
   selectedCity: propSelectedCity = 'Barcha viloyatlar',
@@ -62,22 +68,31 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
   onSelectCategory,
   isCatalogModalOpen: propIsModalOpen,
   setIsCatalogModalOpen: propSetIsModalOpen,
+  searchQuery: propSearchQuery,
+  onSearchQueryChange,
 }) => {
   const [internalModalOpen, setInternalModalOpen] = useState(false);
   const isModalOpen = propIsModalOpen !== undefined ? propIsModalOpen : internalModalOpen;
   const setIsModalOpen = propSetIsModalOpen || setInternalModalOpen;
 
   const [searchQuery, setSearchQuery] = useState('');
+  const updateSearchQuery = (query: string) => {
+    setSearchQuery(query);
+    onSearchQueryChange?.(query);
+  };
+  useEffect(() => {
+    if (propSearchQuery !== undefined) setSearchQuery(propSearchQuery);
+  }, [propSearchQuery]);
   const [selectedCategory, setSelectedCategory] = useState<PhoneCategory | 'all'>(propSelectedCategory || 'all');
   const [selectedBrand, setSelectedBrand] = useState<string>(propSelectedBrand || 'all');
   const [showBrandOptions, setShowBrandOptions] = useState(false);
   const [showPhoneModels, setShowPhoneModels] = useState(true);
-  const [selectedCondition, setSelectedCondition] = useState<string>('all');
+  const [selectedCondition, setSelectedCondition] = useState<PhoneCondition | 'all'>('all');
   const [selectedStorage, setSelectedStorage] = useState<string>('all');
   const [selectedCity, setSelectedCity] = useState<string>(propSelectedCity);
   const [minimumPrice, setMinimumPrice] = useState('');
   const [maximumPrice, setMaximumPrice] = useState('');
-  const [sortBy, setSortBy] = useState<'newest' | 'price_asc' | 'price_desc' | 'battery'>('newest');
+  const [sortBy, setSortBy] = useState<PhoneSort>('newest');
 
   // Sync with propSelectedCity when changed externally from Header
   useEffect(() => {
@@ -125,16 +140,7 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
     { id: 'Google', label: 'Google Pixel' },
     { id: 'OnePlus', label: 'OnePlus' },
     { id: 'Boshqa', label: 'Boshqa brendlar' },
-  ];
-  const otherBrandGroups = [
-    { id: 'tablets', title: 'Planshet brendlari', brands: ['Apple', 'Samsung', 'Xiaomi', 'Huawei', 'Honor', 'OnePlus'] },
-    { id: 'computers', title: 'Kompyuter brendlari', brands: ['Apple', 'Samsung', 'Asus', 'Huawei', 'Xiaomi', 'Google'] },
-    { id: 'laptops', title: 'Noutbuk brendlari', brands: ['Apple', 'Samsung', 'Asus', 'Huawei', 'Xiaomi', 'Honor'] },
-    { id: 'watches', title: 'Smartwatch brendlari', brands: ['Apple', 'Samsung', 'Huawei', 'Xiaomi', 'Honor', 'OnePlus'] },
-    { id: 'chargers', title: 'Zaryadnik brendlari', brands: ['Apple', 'Samsung', 'Xiaomi', 'Huawei', 'Asus', 'Infinix'] },
-    { id: 'headphones', title: 'Naushnik brendlari', brands: ['Apple', 'Samsung', 'Xiaomi', 'Huawei', 'Honor', 'Asus', 'OnePlus'] },
-  ];
-  const [openOtherBrandGroup, setOpenOtherBrandGroup] = useState<string | null>(null);
+  ].filter((brand) => brand.id === 'all' || phones.some((phone) => phone.brand === brand.id));
 
   const categoryIcons: Record<string, React.ReactNode> = {
     all: <Smartphone className="w-4 h-4" />,
@@ -146,13 +152,15 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
   };
 
   const conditions = [
-    { id: 'all', label: 'Barcha holat' },
-    { id: 'new', label: 'Yangi' },
-    { id: 'ideal', label: 'Ideal' },
-    { id: 'good', label: 'Yaxshi' },
+    { id: 'all' as const, label: 'Barcha holat' },
+    { id: 'new' as const, label: 'Yangi' },
+    { id: 'ideal' as const, label: 'Ideal' },
+    { id: 'good' as const, label: 'Yaxshi' },
+    { id: 'fair' as const, label: 'Qoniqarli' },
   ];
 
-  const storageOptions: StorageOption[] = ['128GB', '256GB', '512GB', '1TB'];
+  const storageOptions = [...new Set(phones.map((phone) => phone.storage))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  const availableCities = [...new Set(phones.map((phone) => phone.city).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'uz'));
 
   // Count items per category
   const categoryCounts = useMemo(() => {
@@ -165,33 +173,22 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
     return counts;
   }, [phones]);
 
-  const filteredPhones = useMemo(() => {
-    return phones
-      .filter((p) => {
-        if (searchQuery.trim()) {
-          const q = searchQuery.toLowerCase();
-          const searchable = [p.title, p.model, p.brand, p.series, p.storage, p.color, p.city, p.description]
-            .filter(Boolean).join(' ').toLocaleLowerCase();
-          if (!searchable.includes(q)) return false;
-        }
+  const filteredPhones = useMemo(() => filterPhoneListings(phones, {
+    query: searchQuery,
+    category: selectedCategory,
+    brand: selectedBrand,
+    condition: selectedCondition,
+    storage: selectedStorage,
+    city: selectedCity,
+    minimumPrice,
+    maximumPrice,
+    sortBy,
+  }), [phones, searchQuery, selectedCategory, selectedBrand, selectedCondition, selectedStorage, selectedCity, minimumPrice, maximumPrice, sortBy]);
 
-        if (selectedCategory !== 'all' && p.category !== selectedCategory) return false;
-        if (selectedBrand !== 'all' && p.brand !== selectedBrand) return false;
-        if (selectedCondition !== 'all' && p.condition !== selectedCondition) return false;
-        if (selectedStorage !== 'all' && p.storage !== selectedStorage) return false;
-        if (selectedCity !== 'Barcha viloyatlar' && p.city !== selectedCity) return false;
-        if (minimumPrice && p.priceUsd < Number(minimumPrice)) return false;
-        if (maximumPrice && p.priceUsd > Number(maximumPrice)) return false;
-
-        return true;
-      })
-      .sort((a, b) => {
-        if (sortBy === 'price_asc') return a.priceUsd - b.priceUsd;
-        if (sortBy === 'price_desc') return b.priceUsd - a.priceUsd;
-        if (sortBy === 'battery') return (b.batteryHealth || 0) - (a.batteryHealth || 0);
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      });
-  }, [phones, searchQuery, selectedCategory, selectedBrand, selectedCondition, selectedStorage, selectedCity, minimumPrice, maximumPrice, sortBy]);
+  const recommendations = useMemo(
+    () => getPhoneRecommendations(phones, viewCounts, 4, filteredPhones),
+    [phones, filteredPhones, viewCounts]
+  );
 
   // Ketma-ket pastga avtomatik surilish (Auto-slide down in stream mode)
   useEffect(() => {
@@ -212,22 +209,23 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
   }, [isAutoScrolling, viewMode, filteredPhones]);
 
   const resetFilters = () => {
-    setSearchQuery('');
+    updateSearchQuery('');
     setSelectedCategory('all');
     setSelectedBrand('all');
-    setShowPhoneModels(false);
+    setShowPhoneModels(true);
     setSelectedCondition('all');
     setSelectedStorage('all');
     setSelectedCity('Barcha viloyatlar');
     setMinimumPrice('');
     setMaximumPrice('');
-    setSortBy('newest');
     onSelectBrand?.('all');
     onSelectCategory?.('all');
     onSelectCity?.('Barcha viloyatlar');
   };
 
-  const isFiltered = searchQuery !== '' || selectedCategory !== 'all' || selectedBrand !== 'all' || selectedCondition !== 'all' || selectedStorage !== 'all' || selectedCity !== 'Barcha viloyatlar' || minimumPrice !== '' || maximumPrice !== '';
+  const isFiltered = Boolean(searchQuery.trim()) || selectedCategory !== 'all' || selectedBrand !== 'all' || selectedCondition !== 'all' || selectedStorage !== 'all' || selectedCity !== 'Barcha viloyatlar' || minimumPrice !== '' || maximumPrice !== '';
+  const invalidPriceRange = [minimumPrice, maximumPrice].some((value) => value !== '' && (!Number.isFinite(Number(value)) || Number(value) < 0))
+    || (minimumPrice !== '' && maximumPrice !== '' && Number(minimumPrice) > Number(maximumPrice));
 
   // Smooth scroll down to next item in stream mode
   const handleScrollToNextPhone = () => {
@@ -247,25 +245,25 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
   };
 
   return (
-    <section id="catalog-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <section id="catalog-section" className="mx-auto max-w-7xl scroll-mt-48 space-y-6 px-4 py-8 sm:px-6 md:scroll-mt-36 lg:px-8">
       
       {/* 
         CLEAN, AKURAT HEADER: 
         All the cluttered filter pills (search, category tags, brand tags, condition, storage, city) 
         have been removed from the main screen and placed INSIDE the "Smartfonlar katalogi" button!
       */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.08]">
+      <div className="flex flex-col justify-between gap-4 border-b border-white/[0.08] pb-4 sm:flex-row sm:items-center">
         <div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5">
             <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              Smartfonlar
+              Yangi e'lonlar
             </h2>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-white/[0.08] text-amber-300 font-mono font-extrabold border border-white/10">
               {filteredPhones.length} ta smartfon topildi
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-400 font-medium mt-0.5">
-            O'zbekiston bo'yicha kafolatlangan flagman va hamyonbop modellar
+            Mavjud telefon e'lonlari. Eng yangilari birinchi ko'rsatiladi.
           </p>
         </div>
 
@@ -277,7 +275,7 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
             <button
               onClick={() => setViewMode('grid')}
               title="Katakcha ko'rinishi"
-              className={`p-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
+              className={`inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg p-2 text-xs font-bold transition-colors ${
                 viewMode === 'grid'
                   ? 'bg-amber-400 text-black shadow'
                   : 'text-slate-400 hover:text-white'
@@ -293,7 +291,7 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
                 setIsAutoScrolling(true);
               }}
               title="Ketma-ket pastga suriladigan oqim"
-              className={`p-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
+              className={`inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg p-2 text-xs font-bold transition-colors ${
                 viewMode === 'stream'
                   ? 'bg-amber-400 text-black shadow'
                   : 'text-slate-400 hover:text-white'
@@ -306,9 +304,10 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
 
           {/* Quick Sort Dropdown */}
           <select
+            aria-label="Saralash"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as any)}
-            className="py-2 px-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-xs font-semibold text-slate-200 focus:outline-none focus:border-amber-400 cursor-pointer"
+            className="min-h-11 max-w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-xs font-semibold text-slate-200 focus:border-amber-400 focus:outline-none"
           >
             <option value="newest" className="bg-[#12151e] text-white">Yangi e'lonlar</option>
             <option value="price_asc" className="bg-[#12151e] text-white">Arzondan qimmatga</option>
@@ -324,7 +323,7 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             onClick={() => setIsModalOpen(true)}
-            className="px-5 py-2.5 sm:py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-300 hover:from-amber-300 hover:to-amber-200 text-black font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-amber-400/25 transition-all cursor-pointer"
+            className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-300 px-5 text-xs font-extrabold text-black shadow-lg shadow-amber-400/25 transition-all hover:from-amber-300 hover:to-amber-200 sm:text-sm"
           >
             <SlidersHorizontal className="w-4 h-4 stroke-[2.5]" />
             <span>Filtrlar</span>
@@ -341,10 +340,10 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
         <div className="flex flex-wrap items-center gap-2 py-1 text-xs">
           <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Faol filtrlar:</span>
 
-          {searchQuery && (
+          {searchQuery.trim() && (
             <span className="px-2.5 py-1 rounded-xl bg-amber-400/15 border border-amber-400/30 text-amber-300 flex items-center gap-1.5 font-bold">
               <span>Qidiruv: "{searchQuery}"</span>
-              <button onClick={() => setSearchQuery('')} className="hover:text-white cursor-pointer">
+                  <button onClick={() => updateSearchQuery('')} className="hover:text-white cursor-pointer">
                 <X className="w-3 h-3" />
               </button>
             </span>
@@ -395,6 +394,13 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
             </span>
           )}
 
+          {(minimumPrice !== '' || maximumPrice !== '') && (
+            <span className="px-2.5 py-1 rounded-xl bg-white/[0.08] border border-white/15 text-slate-200 flex items-center gap-1.5 font-bold">
+              <span>Narx: {minimumPrice || '0'} – {maximumPrice || 'cheksiz'} USD</span>
+              <button type="button" aria-label="Narx filtrini olib tashlash" onClick={() => { setMinimumPrice(''); setMaximumPrice(''); }} className="hover:text-white cursor-pointer"><X className="h-3 w-3" /></button>
+            </span>
+          )}
+
           <button
             onClick={resetFilters}
             className="inline-flex items-center gap-1 text-rose-400 hover:text-rose-300 font-bold ml-1 cursor-pointer"
@@ -406,6 +412,33 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
       )}
 
       <div id="catalog-content-area" />
+
+      {showPhoneModels && viewMode === 'grid' && recommendations.phones.length > 0 && (
+        <section aria-labelledby="featured-listings-heading" className="space-y-4">
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <h2 id="featured-listings-heading" className="text-xl font-black text-white sm:text-2xl">{recommendations.basedOn ? 'Siz ko‘rganlarga o‘xshash' : 'Tavsiya etilgan e’lonlar'}</h2>
+              <p className="mt-1 text-xs text-slate-400">{recommendations.basedOn ? `${recommendations.basedOn.model} asosida tavsiya qilindi` : 'Sotuvchi tanlagan mavjud e’lonlar'}</p>
+            </div>
+            <span className="text-xs text-slate-400">{recommendations.phones.length} ta</span>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 sm:gap-5">
+            {recommendations.phones.map((phone) => (
+              <PhoneCard
+                key={`featured-${phone.id}`}
+                phone={phone}
+                currency={currency}
+                onSelect={onSelectPhone}
+                onAddToCart={onAddToCart}
+                isComparing={comparingPhoneIds.includes(phone.id)}
+                onToggleCompare={onToggleCompare}
+                isFavorite={favoriteIds.includes(phone.id)}
+                onToggleFavorite={onToggleFavorite}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* 
         STREAM MODE: Ketma-ket pastga suriluvchi oqim rejimi 
@@ -460,12 +493,14 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
               >
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
-                    <div 
+                    <button
+                      type="button"
                       onClick={() => onSelectPhone(phone)}
+                      aria-label={`${phone.model} tafsilotlarini ochish`}
                       className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-black/50 border border-white/10 p-1 shrink-0 overflow-hidden cursor-pointer"
                     >
                       <img src={phone.images[0]} alt={phone.title} className="w-full h-full object-cover rounded-lg" />
-                    </div>
+                    </button>
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-white/10 text-white">
@@ -475,11 +510,8 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
                           📍 {phone.city}
                         </span>
                       </div>
-                      <h3 
-                        onClick={() => onSelectPhone(phone)}
-                        className="text-base sm:text-lg font-black text-white hover:text-amber-400 cursor-pointer mt-1"
-                      >
-                        {phone.title}
+                      <h3 className="mt-1 text-base font-black text-white sm:text-lg">
+                        <button type="button" onClick={() => onSelectPhone(phone)} className="text-left hover:text-amber-400 cursor-pointer">{phone.title}</button>
                       </h3>
                       <div className="text-xs text-slate-400 flex items-center gap-3 mt-1">
                         <span>Xotira: {phone.storage}</span>
@@ -507,6 +539,13 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
                 </div>
               </motion.div>
             ))}
+            {filteredPhones.length === 0 && (
+              <div role="status" className="rounded-2xl border border-dashed border-white/15 px-4 py-8 text-center text-sm text-slate-300 sm:px-8">
+                <p className="font-bold text-white">{phones.length === 0 ? 'Hozircha e’lonlar yo‘q' : 'Mos telefon topilmadi'}</p>
+                <p className="mt-1 text-slate-400">{phones.length === 0 ? 'Yangi e’lonlar paydo bo‘lganda shu yerda ko‘rinadi.' : 'Qidiruv so‘zini yoki tanlangan filtrlarni o‘zgartirib ko‘ring.'}</p>
+                {isFiltered && <button type="button" onClick={resetFilters} className="mt-4 rounded-xl bg-amber-400 px-4 py-2 font-bold text-black hover:bg-amber-300">Qidiruv va filtrlarni tozalash</button>}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -538,17 +577,17 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
                 <Smartphone className="w-8 h-8 opacity-60" />
               </div>
               <h3 className="text-xl font-black text-white">
-                Hech qanday telefon topilmadi
+                {phones.length === 0 ? 'Hozircha e’lonlar yo‘q' : 'Hech qanday telefon topilmadi'}
               </h3>
               <p className="text-sm text-slate-400 max-w-md mx-auto">
-                Tanlangan parametrlar bo'yicha e'lon mavjud emas. Filtrlarni tozalab qaytadan urinib ko'ring.
+                {phones.length === 0 ? 'Yangi e’lonlar paydo bo‘lganda shu yerda ko‘rinadi.' : 'Tanlangan qidiruv va filtrlar bo‘yicha e’lon topilmadi. Qidiruvni o‘zgartiring yoki filtrlarni tozalang.'}
               </p>
-              <button
+              {isFiltered && <button
                 onClick={resetFilters}
                 className="px-5 py-2.5 rounded-xl bg-amber-400 text-black text-xs font-bold hover:bg-amber-300 transition-colors cursor-pointer"
               >
-                Barcha filtrlarni tozalash
-              </button>
+                Qidiruv va filtrlarni tozalash
+              </button>}
             </div>
           )}
         </>
@@ -566,7 +605,7 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
       */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+            <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-2 sm:items-center sm:p-4" role="presentation">
             
             {/* Backdrop */}
             <motion.div
@@ -579,11 +618,14 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
 
             {/* Modal Box */}
             <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="catalog-filter-title"
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="relative w-full max-w-2xl bg-[#0f121d] border border-amber-400/40 rounded-3xl shadow-2xl shadow-black/95 z-10 flex flex-col max-h-[90vh] overflow-hidden"
+              className="relative my-auto flex max-h-[calc(100dvh-1rem)] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-amber-400/40 bg-[#0f121d] shadow-2xl shadow-black/95 sm:max-h-[90dvh]"
             >
               
               {/* Modal Header */}
@@ -593,7 +635,7 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
                     <SlidersHorizontal className="w-5 h-5 stroke-[2.5]" />
                   </div>
                   <div>
-                    <h3 className="text-base sm:text-lg font-black text-white">
+                    <h3 id="catalog-filter-title" className="text-base sm:text-lg font-black text-white">
                       Smartfonlar katalogi va filtrlash
                     </h3>
                     <p className="text-xs text-slate-400">
@@ -604,14 +646,14 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
 
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl p-2 text-slate-400 transition-colors hover:bg-white/[0.08] hover:text-white"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               {/* Scrollable Filter Body */}
-              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 scrollbar-thin">
+              <div className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain p-4 sm:p-6 scrollbar-thin">
                 
                 {/* 1. Qidiruv input */}
                 <div className="space-y-1.5">
@@ -622,14 +664,19 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
                     <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
                       type="text"
+                      aria-label="Telefon modeli yoki kalit so‘z bo‘yicha qidirish"
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onChange={(e) => {
+                        updateSearchQuery(e.target.value);
+                      }}
                       placeholder="Masalan: iPhone 18, Galaxy S25, ROG 8, Pura 70, Spark..."
                       className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-white/[0.06] border border-white/10 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-amber-400 font-medium"
                     />
                     {searchQuery && (
                       <button
-                        onClick={() => setSearchQuery('')}
+                        type="button"
+                        aria-label="Qidiruv matnini tozalash"
+                        onClick={() => updateSearchQuery('')}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer"
                       >
                         <X className="w-3.5 h-3.5" />
@@ -684,7 +731,7 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
                 {/* 3. Katalog bo'limlari va har birining brendlari */}
                 <div className="space-y-2">
                   <div className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
-                    Telefon brendlari
+                    Telefon
                   </div>
                   <div className="space-y-2">
                     <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] overflow-hidden">
@@ -694,7 +741,7 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
                         onClick={() => setShowBrandOptions((open) => !open)}
                         className="w-full p-3 flex items-center justify-between text-left text-sm font-bold text-white hover:bg-white/[0.05] transition-colors cursor-pointer"
                       >
-                        <span>Telefon brendlari</span>
+                        <span>Telefon</span>
                         <ChevronDown className={`w-4 h-4 text-amber-400 transition-transform ${showBrandOptions ? 'rotate-180' : ''}`} />
                       </button>
                       {showBrandOptions && (
@@ -732,34 +779,6 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
                       )}
                     </div>
 
-                    {otherBrandGroups.map((group) => {
-                      const isOpen = openOtherBrandGroup === group.id;
-                      return (
-                        <div key={group.id} className="rounded-2xl border border-white/[0.08] bg-white/[0.02] overflow-hidden">
-                          <button
-                            type="button"
-                            aria-expanded={isOpen}
-                            onClick={() => setOpenOtherBrandGroup(isOpen ? null : group.id)}
-                            className="w-full p-3 flex items-center justify-between text-left text-sm font-bold text-white hover:bg-white/[0.05] transition-colors cursor-pointer"
-                          >
-                            <span>{group.title}</span>
-                            <ChevronDown className={`w-4 h-4 text-amber-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                          </button>
-                          {isOpen && (
-                            <div className="p-3 pt-0 flex flex-wrap gap-1.5">
-                              {group.brands.map((brand) => (
-                                <span key={brand} className="px-3 py-1.5 rounded-xl text-xs font-bold border border-white/[0.08] bg-white/[0.04] text-slate-300">
-                                  {brand}
-                                </span>
-                              ))}
-                              <p className="w-full mt-1 text-[11px] text-slate-500">
-                                Bu bo‘lim uchun mahsulotlar katalogga qo‘shilmoqda.
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
                   </div>
                 </div>
 
@@ -776,6 +795,8 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
                         return (
                           <button
                             key={c.id}
+                            type="button"
+                            aria-pressed={isActive}
                             onClick={() => setSelectedCondition(c.id)}
                             className={`p-2 rounded-xl text-xs font-bold border text-center transition-all cursor-pointer ${
                               isActive
@@ -801,6 +822,8 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
                         return (
                           <button
                             key={st}
+                            type="button"
+                            aria-pressed={isActive}
                             onClick={() => setSelectedStorage(st)}
                             className={`p-2 rounded-xl text-xs font-mono font-bold border text-center transition-all cursor-pointer ${
                               isActive
@@ -820,9 +843,16 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
                 <div className="space-y-2">
                   <label className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Narx oralig'i (USD)</label>
                   <div className="grid grid-cols-2 gap-2">
-                    <input aria-label="Eng kam narx (USD)" type="number" min="0" inputMode="numeric" placeholder="Dan" value={minimumPrice} onChange={(e) => setMinimumPrice(e.target.value)} className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-amber-400 focus:outline-none" />
-                    <input aria-label="Eng yuqori narx (USD)" type="number" min="0" inputMode="numeric" placeholder="Gacha" value={maximumPrice} onChange={(e) => setMaximumPrice(e.target.value)} className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-amber-400 focus:outline-none" />
+                    <input aria-label="Eng kam narx (USD)" aria-invalid={invalidPriceRange} type="number" min="0" inputMode="numeric" placeholder="Dan" value={minimumPrice} onChange={(e) => setMinimumPrice(e.target.value)} className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-amber-400 focus:outline-none" />
+                    <input aria-label="Eng yuqori narx (USD)" aria-invalid={invalidPriceRange} type="number" min="0" inputMode="numeric" placeholder="Gacha" value={maximumPrice} onChange={(e) => setMaximumPrice(e.target.value)} className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-amber-400 focus:outline-none" />
                   </div>
+                  {invalidPriceRange && (
+                    <p role="alert" className="text-xs text-rose-300">
+                      {Number(minimumPrice) < 0 || Number(maximumPrice) < 0
+                        ? 'Narx manfiy bo‘lishi mumkin emas.'
+                        : 'Eng kam narx eng yuqori narxdan oshmasligi kerak.'}
+                    </p>
+                  )}
                 </div>
 
                 {/* 5. Manzil / Viloyat tanlash */}
@@ -844,7 +874,7 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-44 overflow-y-auto pr-1 scrollbar-thin">
-                    {CITIES_OF_UZBEKISTAN.map((city) => {
+                    {['Barcha viloyatlar', ...availableCities].map((city) => {
                       const isSel = selectedCity === city;
                       return (
                         <button
@@ -872,18 +902,21 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
               {/* Modal Footer Bar */}
               <div className="p-4 sm:p-5 border-t border-white/[0.08] bg-[#121524] flex items-center justify-between gap-3">
                 <button
+                  type="button"
+                  disabled={!isFiltered}
                   onClick={resetFilters}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-rose-400 hover:text-white hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all cursor-pointer flex items-center gap-1.5"
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-rose-400 hover:text-white hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all cursor-pointer flex items-center gap-1.5 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>Filtrlarni tozalash</span>
                 </button>
 
                 <motion.button
+                  disabled={invalidPriceRange}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleApplyFilters}
-                  className="px-6 py-2.5 sm:py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-300 hover:from-amber-300 hover:to-amber-200 text-black font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-amber-400/25 cursor-pointer"
+                  className="px-6 py-2.5 sm:py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-300 hover:from-amber-300 hover:to-amber-200 text-black font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-amber-400/25 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <span>Natijalarni ko'rsatish ({filteredPhones.length} ta)</span>
                   <ArrowRight className="w-4 h-4 stroke-[2.5]" />

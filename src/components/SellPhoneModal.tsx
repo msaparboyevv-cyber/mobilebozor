@@ -3,6 +3,7 @@ import { PhoneListing, PhoneBrand, PhoneCondition, StorageOption, PhoneCategory 
 import { X, Upload, CheckCircle2, ShieldCheck, Camera } from 'lucide-react';
 import { CITIES_OF_UZBEKISTAN, ALL_MODELS_BY_BRAND } from '../data/mockPhones';
 import { motion, AnimatePresence } from 'motion/react';
+import defaultPhoneImage from '../assets/images/phone_iphone_titanium_1792582841706.jpg';
 
 interface SellPhoneModalProps {
   isOpen: boolean;
@@ -33,7 +34,7 @@ export const SellPhoneModal: React.FC<SellPhoneModalProps> = ({
   const [sellerPhone, setSellerPhone] = useState('+998 ');
   const [sellerTelegram, setSellerTelegram] = useState('');
   const [description, setDescription] = useState('');
-  const [imagePreview, setImagePreview] = useState<string>('/src/assets/images/phone_iphone_titanium_1792582841706.jpg');
+  const [imagePreview, setImagePreview] = useState<string>(defaultPhoneImage);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -83,7 +84,8 @@ export const SellPhoneModal: React.FC<SellPhoneModalProps> = ({
       setErrorMessage('Telefon modelini kiriting.');
       return;
     }
-    if (!sellerName.trim() || sellerPhone.length < 9) {
+    const normalizedPhone = sellerPhone.replace(/\D/g, '');
+    if (!sellerName.trim() || !/^998\d{9}$/.test(normalizedPhone)) {
       setErrorMessage('Ism va telefon raqamni to\'g\'ri kiriting.');
       return;
     }
@@ -110,11 +112,11 @@ export const SellPhoneModal: React.FC<SellPhoneModalProps> = ({
       city,
       seller: {
         name: sellerName.trim(),
-        phone: sellerPhone.trim(),
+        phone: `+${normalizedPhone}`,
         telegram: sellerTelegram.trim().replace('@', ''),
         type: 'individual',
-        rating: 5.0,
-        dealsCount: 1
+        rating: 0,
+        dealsCount: 0
       },
       images: [imagePreview],
       description: description.trim() || `${brand} ${model} ${storage}. Holati ${condition}.`,
@@ -127,13 +129,13 @@ export const SellPhoneModal: React.FC<SellPhoneModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 p-2 backdrop-blur-md sm:items-center sm:p-4">
       <motion.div 
         initial={{ opacity: 0, scale: 0.94 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.94 }}
         transition={{ duration: 0.2 }}
-        className="relative w-full max-w-xl bg-[#12151e] border border-white/[0.1] rounded-3xl shadow-2xl p-6 sm:p-8 my-8 text-white max-h-[90vh] overflow-y-auto"
+        className="relative my-auto max-h-[calc(100dvh-1rem)] w-full max-w-xl overflow-y-auto overscroll-contain rounded-3xl border border-white/[0.1] bg-[#12151e] p-4 text-white shadow-2xl sm:my-4 sm:max-h-[90dvh] sm:p-8"
       >
         <button
           onClick={onClose}
@@ -149,7 +151,7 @@ export const SellPhoneModal: React.FC<SellPhoneModalProps> = ({
             </div>
             <h3 className="text-2xl font-bold text-white">E'lon joylashtirildi!</h3>
             <p className="text-sm text-slate-300">
-              Smartfoningiz darhol katalogda paydo bo'ldi.
+              Smartfon ushbu brauzerda saqlanib, katalogga qo‘shildi. U serverga yoki boshqa qurilmalarga yuborilmadi.
             </p>
             <div className="pt-2">
               <button
@@ -240,7 +242,7 @@ export const SellPhoneModal: React.FC<SellPhoneModalProps> = ({
                       key={item.model}
                       type="button"
                       onClick={() => handleSelectModelSuggestion(item.model, item.category, item.baseUsd)}
-                      className={`text-[11px] px-2 py-0.5 rounded-lg border transition-colors cursor-pointer ${
+                      className={`min-h-10 rounded-lg border px-2 py-1 text-[11px] transition-colors ${
                         model === item.model
                           ? 'bg-amber-400 text-black border-amber-400 font-bold'
                           : 'bg-white/[0.04] text-slate-300 border-white/[0.08] hover:text-white'
@@ -362,7 +364,7 @@ export const SellPhoneModal: React.FC<SellPhoneModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="py-2.5 px-4 text-xs font-bold text-slate-400 hover:text-white cursor-pointer"
+                className="min-h-11 px-4 py-2.5 text-xs font-bold text-slate-400 hover:text-white"
               >
                 Bekor qilish
               </button>

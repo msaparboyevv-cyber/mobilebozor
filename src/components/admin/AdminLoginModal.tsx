@@ -6,19 +6,20 @@ interface AdminLoginModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLoginSuccess: () => void;
+  onSetInitialPassword: (password: string) => void;
   adminPassword: string;
-  ownerEmail: string;
 }
 
 export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
   isOpen,
   onClose,
   onLoginSuccess,
+  onSetInitialPassword,
   adminPassword,
-  ownerEmail,
 }) => {
-  const [emailOrUsername, setEmailOrUsername] = useState(ownerEmail);
+  const [emailOrUsername, setEmailOrUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
@@ -28,20 +29,34 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
     const cleanEmail = emailOrUsername.trim().toLowerCase();
     const cleanPassword = password.trim();
 
-    // Check against authorized owner email/username and password
-    const isOwnerAuthorized =
-      cleanEmail === ownerEmail.toLowerCase() ||
-      cleanEmail === 'admin' ||
-      cleanEmail === 'msaparboyevv';
+    if (!adminPassword) {
+      if (cleanEmail !== 'admin') {
+        setError('Admin paroli hali sozlanmagan. Birinchi sozlashda login sifatida “admin” deb yozing.');
+        return;
+      }
+      if (cleanPassword.length < 8) {
+        setError('Parol kamida 8 belgidan iborat bo‘lishi kerak.');
+        return;
+      }
+      if (cleanPassword !== confirmPassword) {
+        setError('Parollar mos kelmadi.');
+        return;
+      }
+      onSetInitialPassword(cleanPassword);
+    }
 
-    if (isOwnerAuthorized && Boolean(adminPassword) && cleanPassword === adminPassword) {
+    // Once a password exists, older admin email/username values remain accepted;
+    // the configured local password is the credential checked by this demo UI.
+    if (adminPassword ? cleanPassword === adminPassword : cleanEmail === 'admin') {
       setError('');
       if (rememberMe) {
         try { localStorage.setItem('mb_admin_authenticated', 'true'); } catch { /* Private browsing can disable storage. */ }
+      } else {
+        try { localStorage.removeItem('mb_admin_authenticated'); } catch { /* Private browsing can disable storage. */ }
       }
       onLoginSuccess();
     } else {
-      setError('Login yoki maxfiy parol noto\'g\'ri! Faqat bosh administrator kirishi mumkin.');
+      setError('Admin login yoki maxfiy parol noto‘g‘ri. Saqlangan parolni kiriting.');
     }
   };
 
@@ -57,7 +72,8 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
         className="relative w-full max-w-md bg-[#12151e] border border-white/[0.12] rounded-3xl p-6 sm:p-8 text-white shadow-2xl space-y-6"
       >
         {/* Close Button */}
-        <button
+          <button
+          type="button"
           onClick={onClose}
           className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
         >
@@ -69,9 +85,9 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
           <div className="w-14 h-14 rounded-2xl bg-amber-400/15 border border-amber-400/30 text-amber-400 mx-auto flex items-center justify-center">
             <Lock className="w-7 h-7 stroke-[2.2]" />
           </div>
-          <h2 className="text-2xl font-black text-white tracking-tight">Admin Tizimiga Kirish</h2>
+          <h2 className="text-2xl font-black text-white tracking-tight">{adminPassword ? 'Admin tizimiga kirish' : 'Admin parolini sozlash'}</h2>
           <p className="text-xs text-slate-400">
-            Faqat tizim egasi ({ownerEmail}) uchun himoyalangan boshqaruv paneli.
+            {adminPassword ? 'Administrator ma’lumotlari bilan tizimga kiring.' : 'Birinchi kirishda admin login orqali kamida 8 belgili parol yarating.'}
           </p>
         </div>
 
@@ -101,7 +117,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
               required
               value={emailOrUsername}
               onChange={(e) => setEmailOrUsername(e.target.value)}
-              placeholder="msaparboyevv@gmail.com"
+              placeholder="admin login"
               className="w-full py-3 px-3.5 rounded-xl bg-black/40 border border-white/[0.1] text-xs font-medium text-white focus:outline-none focus:border-amber-400"
             />
           </div>
@@ -109,7 +125,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
           <div>
             <div className="flex justify-between items-center mb-1.5">
               <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
-                Maxfiy Parol
+                {adminPassword ? 'Maxfiy parol' : 'Yangi parol'}
               </label>
             </div>
             
@@ -119,7 +135,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Parolni kiriting..."
+                placeholder={adminPassword ? 'Parolni kiriting...' : 'Kamida 8 belgi'}
                 className="w-full py-3 pl-3.5 pr-10 rounded-xl bg-black/40 border border-white/[0.1] text-xs font-mono text-white focus:outline-none focus:border-amber-400"
               />
               <button
@@ -132,6 +148,21 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
             </div>
           </div>
 
+          {!adminPassword && (
+            <div>
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">Parolni tasdiqlang</label>
+              <input
+                type="password"
+                required
+                minLength={8}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Yangi parolni qayta kiriting"
+                className="w-full py-3 px-3.5 rounded-xl bg-black/40 border border-white/[0.1] text-xs font-mono text-white focus:outline-none focus:border-amber-400"
+              />
+            </div>
+          )}
+
           {/* Remember me */}
           <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
             <label className="flex items-center gap-2 cursor-pointer">
@@ -143,7 +174,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
               />
               <span>Meni eslab qolish</span>
             </label>
-            <span className="text-slate-500 text-[11px]">Parol qurilma xotirasida tekshiriladi</span>
+            <span className="text-slate-500 text-[11px]">Parol ushbu qurilmada saqlanadi</span>
           </div>
 
           {/* Submit */}

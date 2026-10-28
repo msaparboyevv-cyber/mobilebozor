@@ -29,6 +29,7 @@ export const TradeInCalculator: React.FC<TradeInCalculatorProps> = ({
   const [clientPhone, setClientPhone] = useState('+998 ');
   const [selectedBranch, setSelectedBranch] = useState('Toshkent — Malika A-14');
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [formError, setFormError] = useState('');
 
   const currentModelList = ALL_MODELS_BY_BRAND[selectedBrand] || ALL_MODELS_BY_BRAND.Apple;
   const currentModelInfo = currentModelList.find((m) => m.model === selectedModel) || currentModelList[0];
@@ -62,13 +63,22 @@ export const TradeInCalculator: React.FC<TradeInCalculatorProps> = ({
 
   const handleSubmitRequest = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!clientName.trim() || clientPhone.length < 9) return;
+    const normalizedPhone = clientPhone.replace(/\D/g, '');
+    if (clientName.trim().length < 2) {
+      setFormError('Ismni kamida 2 ta harf bilan kiriting.');
+      return;
+    }
+    if (!/^998\d{9}$/.test(normalizedPhone)) {
+      setFormError('Telefon raqamini +998 XX XXX XX XX formatida kiriting.');
+      return;
+    }
+    setFormError('');
     
     if (onSubmitTradeIn) {
       onSubmitTradeIn({
         id: `TR-${Math.floor(10000 + Math.random() * 90000)}`,
         clientName: clientName.trim(),
-        clientPhone: clientPhone.trim(),
+        clientPhone: `+${normalizedPhone}`,
         brand: selectedBrand,
         model: selectedModel,
         storage: selectedStorage,
@@ -339,7 +349,7 @@ export const TradeInCalculator: React.FC<TradeInCalculatorProps> = ({
                 <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
                 <h4 className="text-base font-bold text-white">Ariza qabul qilindi!</h4>
                 <p className="text-xs text-slate-300">
-                  Mutaxassisimiz 10 daqiqa ichida siz bilan bog'lanadi.
+                  Ariza ushbu brauzerda saqlandi. Hozircha mutaxassisga avtomatik yuborilmaydi.
                 </p>
                 <button
                   onClick={() => setIsSubmitted(false)}
@@ -350,12 +360,13 @@ export const TradeInCalculator: React.FC<TradeInCalculatorProps> = ({
               </motion.div>
             ) : (
               <form onSubmit={handleSubmitRequest} className="space-y-3 pt-2">
+                {formError && <p role="alert" className="rounded-xl border border-rose-400/25 bg-rose-400/10 px-3 py-2 text-xs text-rose-200">{formError}</p>}
                 <input
                   type="text"
                   required
                   placeholder="Ismingiz"
                   value={clientName}
-                  onChange={(e) => setClientName(e.target.value)}
+                  onChange={(e) => { setClientName(e.target.value); setFormError(''); }}
                   className="w-full py-3 px-3.5 rounded-xl bg-black/40 border border-white/[0.1] text-xs text-white focus:outline-none focus:border-amber-400"
                 />
 
@@ -364,7 +375,7 @@ export const TradeInCalculator: React.FC<TradeInCalculatorProps> = ({
                   required
                   placeholder="+998 90 123 45 67"
                   value={clientPhone}
-                  onChange={(e) => setClientPhone(e.target.value)}
+                  onChange={(e) => { setClientPhone(e.target.value); setFormError(''); }}
                   className="w-full py-3 px-3.5 rounded-xl bg-black/40 border border-white/[0.1] text-xs text-white font-mono focus:outline-none focus:border-amber-400"
                 />
 

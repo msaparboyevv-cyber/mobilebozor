@@ -26,7 +26,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({
           </div>
           <h2 className="text-2xl font-extrabold text-white">Buyurtmangiz qabul qilindi!</h2>
           <p className="text-xs text-slate-300">
-            Buyurtma raqami: <span className="font-mono text-amber-400 font-bold">{order.id}</span>
+            Demo buyurtma raqami: <span className="font-mono text-amber-400 font-bold">{order.id}</span>
           </p>
         </div>
 
@@ -50,7 +50,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({
 
           <div className="flex justify-between items-center pb-2 border-b border-[#242a3b]">
             <span className="text-slate-400">To'lov holati:</span>
-            <span className="text-amber-400 font-medium">Yetkazilganda to'lanadi (Naqd/Karta)</span>
+            <span className="text-amber-400 font-medium">{order.paymentMethod === 'cash_on_delivery' ? 'Yetkazilganda naqd' : `Tanlangan: ${order.paymentMethod} (to‘lov ulanmagan)`}</span>
           </div>
 
           <div className="pt-1 flex justify-between items-baseline">
@@ -63,7 +63,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({
         <div className="flex items-start gap-3 p-3.5 rounded-xl bg-[#10131d] border border-[#202534] text-xs text-slate-300">
           <Truck className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
           <p className="text-[11px] leading-relaxed">
-            Tez orada kuryerlik xizmatimiz telefon qilib yetkazib berish vaqtini aniqlashtiradi. Toshkent bo'yicha yetkazib berish 2 soat ichida amalga oshiriladi.
+            Bu demo buyurtma faqat brauzeringizda saqlandi. Do'konga yuborilmadi va yetkazib berish rejalashtirilmadi.
           </p>
         </div>
 

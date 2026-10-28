@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { PhoneListing } from '../types';
-import { ShoppingBag, ArrowLeftRight, Heart, BatteryCharging } from 'lucide-react';
+import { ShoppingBag, ArrowLeftRight, Heart, MapPin, CalendarDays, Smartphone } from 'lucide-react';
 import { motion } from 'motion/react';
+import { formatListingDate, formatListingPrice, getListingConditionLabel } from '../utils/phoneCardFormat';
 
 interface PhoneCardProps {
   phone: PhoneListing;
@@ -12,6 +13,7 @@ interface PhoneCardProps {
   onToggleCompare: (phone: PhoneListing) => void;
   isFavorite: boolean;
   onToggleFavorite: (id: string) => void;
+  compact?: boolean;
 }
 
 export const PhoneCard: React.FC<PhoneCardProps> = ({
@@ -23,175 +25,97 @@ export const PhoneCard: React.FC<PhoneCardProps> = ({
   onToggleCompare,
   isFavorite,
   onToggleFavorite,
+  compact = false,
 }) => {
-  const formatPrice = (val: number) => val.toLocaleString('uz-UZ');
+  const imageSrc = phone.images?.find(Boolean);
+  const [failedImage, setFailedImage] = useState<string | null>(null);
+  const showImage = Boolean(imageSrc) && failedImage !== imageSrc;
+  const dateLabel = formatListingDate(phone.createdAt);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 15 }}
+    <motion.article
+      initial={{ opacity: 0, y: 12 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-40px' }}
-      whileHover={{ y: -6 }}
-      transition={{ duration: 0.25, ease: 'easeOut' }}
-      className="group relative rounded-2xl border border-white/[0.08] hover:border-amber-400/40 bg-[#12151e]/90 hover:bg-[#151926] transition-all duration-300 flex flex-col justify-between overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-amber-500/10 backdrop-blur-sm"
+      whileHover={{ y: -4 }}
+      transition={{ duration: 0.22, ease: 'easeOut' }}
+      className={`group relative flex h-full min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-[#12151e] shadow-lg transition-colors hover:border-amber-400/40 hover:bg-[#151926] focus-within:border-amber-400/60 ${compact ? 'flex-row items-center' : 'flex-col'}`}
     >
-      
-      {/* Visual Area */}
-      <div 
+      <button
+        type="button"
         onClick={() => onSelect(phone)}
-        className="relative h-60 sm:h-64 w-full bg-gradient-to-b from-[#181d2a] to-[#0f121a] overflow-hidden cursor-pointer flex items-center justify-center p-4"
-      >
-        <img
-          src={phone.images[0]}
-          alt={phone.title}
-          referrerPolicy="no-referrer"
-          className="w-full h-full object-contain object-center transform transition-transform duration-500 group-hover:scale-108"
-          onError={(e) => {
-            e.currentTarget.style.display = 'none';
-          }}
-        />
+        aria-label={`${phone.model} e’loni tafsilotlarini ochish`}
+        className="absolute inset-0 z-0 rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-amber-300"
+      />
 
-        {/* Top Floating Actions */}
-        <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
-          <motion.button
-            whileTap={{ scale: 0.85 }}
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleCompare(phone);
-            }}
-            title={isComparing ? "Taqqoslanmoqda" : "Taqqoslash"}
-            className={`p-2 rounded-xl backdrop-blur-md transition-colors cursor-pointer ${
-              isComparing
-                ? 'bg-amber-400 text-black shadow-md'
-                : 'bg-black/60 text-slate-300 hover:text-white hover:bg-black'
-            }`}
+      <div className={`relative z-10 shrink-0 overflow-hidden bg-gradient-to-b from-[#1a2030] to-[#0d1018] p-3 pointer-events-none ${compact ? 'h-24 w-24 sm:h-28 sm:w-28' : 'aspect-[4/3] w-full'}`}>
+        {showImage ? (
+          <img
+            src={imageSrc}
+            alt={phone.model}
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            onError={() => setFailedImage(imageSrc || '')}
+            className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+          />
+        ) : (
+          <div role="img" aria-label={`${phone.model} rasmi mavjud emas`} className="flex h-full w-full flex-col items-center justify-center gap-2 text-slate-500">
+            <Smartphone className="h-10 w-10" aria-hidden="true" />
+            <span className="text-xs">Rasm mavjud emas</span>
+          </div>
+        )}
+
+        <div className="pointer-events-auto absolute right-3 top-3 z-10 flex gap-2">
+          {!compact && <button
+            type="button"
+            onClick={() => onToggleCompare(phone)}
+            aria-pressed={isComparing}
+            aria-label={isComparing ? `${phone.model}ni taqqoslashdan olib tashlash` : `${phone.model}ni taqqoslashga qo‘shish`}
+            title={isComparing ? 'Taqqoslashdan olib tashlash' : 'Taqqoslash'}
+            className={`flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-white/10 shadow-sm backdrop-blur transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300 ${isComparing ? 'bg-amber-400 text-black' : 'bg-black/65 text-white hover:bg-black'}`}
           >
-            <ArrowLeftRight className="w-4 h-4" />
-          </motion.button>
-
-          <motion.button
-            whileTap={{ scale: 0.85 }}
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleFavorite(phone.id);
-            }}
-            title="Sevimli"
-            className={`p-2 rounded-xl backdrop-blur-md transition-colors cursor-pointer ${
-              isFavorite
-                ? 'bg-rose-500 text-white shadow-md'
-                : 'bg-black/60 text-slate-300 hover:text-rose-400 hover:bg-black'
-            }`}
-          >
-            <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
-          </motion.button>
-        </div>
-
-        {/* Category & Condition Tags */}
-        <div className="absolute top-3 left-3 z-10 flex flex-col gap-1 items-start">
-          {phone.category && (
-            <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md border backdrop-blur-md ${
-              phone.category === 'flagship'
-                ? 'bg-amber-400/20 text-amber-300 border-amber-400/30'
-                : phone.category === 'foldable'
-                ? 'bg-cyan-400/20 text-cyan-300 border-cyan-400/30'
-                : phone.category === 'camera'
-                ? 'bg-rose-400/20 text-rose-300 border-rose-400/30'
-                : phone.category === 'gaming'
-                ? 'bg-emerald-400/20 text-emerald-300 border-emerald-400/30'
-                : 'bg-indigo-400/20 text-indigo-300 border-indigo-400/30'
-            }`}>
-              {phone.category === 'flagship'
-                ? '★ Flagman'
-                : phone.category === 'foldable'
-                ? '◫ Bukiluvchi'
-                : phone.category === 'camera'
-                ? '◉ Kamerofon'
-                : phone.category === 'gaming'
-                ? '⚡ O\'yinbop'
-                : '◆ Hamyonbop'}
-            </span>
-          )}
-        </div>
-
-        {/* Condition Tag */}
-        <div className="absolute bottom-3 left-3 z-10 text-[11px] font-bold text-white bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10">
-          {phone.condition === 'new' ? 'Yangi' : phone.condition === 'ideal' ? 'Ideal 10/10' : 'Yaxshi 9/10'}
+            <ArrowLeftRight className="h-4 w-4" aria-hidden="true" />
+          </button>}
         </div>
       </div>
 
-      {/* Card Details */}
-      <div className="p-4 flex flex-col flex-grow justify-between gap-3">
-        
-        {/* Unboxed Metadata */}
-        <div className="text-xs font-medium text-slate-400 flex items-center gap-2">
-          <span className="font-bold text-amber-400">{phone.brand}</span>
-          <span className="text-slate-600">·</span>
-          <span className="font-mono text-slate-200">{phone.storage}</span>
-          {phone.batteryHealth && (
-            <>
-              <span className="text-slate-600">·</span>
-              <span className="flex items-center gap-1 text-emerald-400 font-mono font-semibold">
-                <BatteryCharging className="w-3.5 h-3.5" />
-                {phone.batteryHealth}%
-              </span>
-            </>
-          )}
+      <div className={`relative z-10 flex min-w-0 flex-1 flex-col pointer-events-none ${compact ? 'gap-1.5 p-3' : 'gap-2.5 p-4'}`}>
+        <p className="truncate text-xs font-bold text-amber-300">{phone.brand} <span className="text-slate-500">·</span> {phone.storage}</p>
+        <h3 className={`break-words font-bold leading-5 text-white ${compact ? 'line-clamp-2 text-sm' : 'line-clamp-2 min-h-10 text-base'}`}>{phone.model}</h3>
+        <p className={`break-words font-black leading-tight tabular-nums text-white ${compact ? 'text-base' : 'text-xl'}`} aria-label={`Narxi ${formatListingPrice(phone, currency)}`}>
+          {formatListingPrice(phone, currency)}
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-[11px] font-semibold text-slate-200">
+            {getListingConditionLabel(phone.condition)}
+          </span>
+          {phone.uzImeiRegistered && <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-300">IMEI ro‘yxatdan o‘tgan</span>}
         </div>
-
-        {/* Model Title */}
-        <h3 
-          onClick={() => onSelect(phone)}
-          className="text-base font-bold text-white line-clamp-1 hover:text-amber-400 cursor-pointer transition-colors"
+        <div className="mt-auto flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 border-t border-white/[0.08] pt-2 text-xs text-slate-400">
+          {phone.city && <span className="inline-flex min-w-0 items-center gap-1"><MapPin className="h-3.5 w-3.5 shrink-0 text-amber-400" /><span className="truncate">{phone.city}</span></span>}
+          {dateLabel && <span className="inline-flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5 shrink-0" />{dateLabel}</span>}
+        </div>
+        <div className="pointer-events-auto mt-1 grid grid-cols-[1fr_auto] gap-2">
+          <button
+          type="button"
+          onClick={() => onAddToCart(phone)}
+            className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-amber-400 px-3 py-2.5 font-bold text-black transition-colors hover:bg-amber-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200 ${compact ? 'text-xs' : 'text-sm'}`}
         >
-          {phone.model}
-        </h3>
-
-        {/* Price Row */}
-        <div className="pt-2 border-t border-white/[0.06] flex items-baseline justify-between">
-          <div>
-            <div className="text-xl font-black text-white font-mono tabular-nums">
-              {currency === 'UZS' 
-                ? `${formatPrice(phone.priceUzs)} so'm` 
-                : `$${formatPrice(phone.priceUsd)}`
-              }
-            </div>
-            <div className="text-xs text-slate-400 font-mono">
-              {currency === 'UZS' 
-                ? `$${phone.priceUsd}` 
-                : `${formatPrice(phone.priceUzs)} so'm`
-              }
-            </div>
-          </div>
-
-          <div className="text-right">
-            <span className="text-xs font-semibold text-emerald-400">
-              UzIMEI ✓
-            </span>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-2 pt-1">
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={() => onSelect(phone)}
-            className="py-2.5 px-3 text-xs font-bold text-slate-200 bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] rounded-xl transition-colors cursor-pointer text-center"
+          <ShoppingBag className="h-4 w-4" aria-hidden="true" />
+          {compact ? 'Savatga' : 'Savatga qo‘shish'}
+        </button>
+          <button
+            type="button"
+            onClick={() => onToggleFavorite(phone.id)}
+            aria-pressed={isFavorite}
+            aria-label={isFavorite ? `${phone.model}ni istaklardan olib tashlash` : `${phone.model}ni istaklarga qo‘shish`}
+            title={isFavorite ? 'Istaklardan olib tashlash' : 'Istaklarga qo‘shish'}
+            className={`inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-xl border px-3 text-xs font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300 ${isFavorite ? 'border-rose-400/40 bg-rose-500/15 text-rose-300' : 'border-white/10 bg-white/[0.05] text-slate-200 hover:border-rose-400/40 hover:text-rose-300'}`}
           >
-            Batafsil
-          </motion.button>
-
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={() => onAddToCart(phone)}
-            className="py-2.5 px-3 text-xs font-bold text-black bg-gradient-to-r from-amber-400 to-amber-300 hover:from-amber-300 hover:to-amber-200 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-md shadow-amber-400/10 cursor-pointer"
-          >
-            <ShoppingBag className="w-4 h-4 stroke-[2.5]" />
-            <span>Sotib olish</span>
-          </motion.button>
+            <Heart className={`h-4 w-4 ${isFavorite ? 'fill-current' : ''}`} aria-hidden="true" />
+          </button>
         </div>
-
       </div>
-
-    </motion.div>
+    </motion.article>
   );
 };

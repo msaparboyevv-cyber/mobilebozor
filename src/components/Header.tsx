@@ -19,7 +19,8 @@ import {
   Tag,
   ShieldCheck,
   LayoutGrid,
-  SlidersHorizontal
+  SlidersHorizontal,
+  UserRound
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CITIES_OF_UZBEKISTAN } from '../data/mockPhones';
@@ -34,14 +35,19 @@ interface HeaderProps {
   toggleCurrency: () => void;
   compareCount: number;
   onOpenAdmin: () => void;
+  onOpenAccount: (mode: 'login' | 'register') => void;
+  accountName?: string | null;
+  onLogoutAccount: () => void;
   selectedCity: string;
   onSelectCity: (city: string) => void;
   cityPhoneCounts?: Record<string, number>;
   selectedBrand?: string;
+  availableBrands?: string[];
   onSelectBrand?: (brand: string) => void;
   selectedCategory?: string;
   onSelectCategory?: (category: string) => void;
-  onOpenCatalogModal?: () => void;
+  searchQuery?: string;
+  onSearchQueryChange?: (query: string) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -54,16 +60,22 @@ export const Header: React.FC<HeaderProps> = ({
   toggleCurrency,
   compareCount,
   onOpenAdmin,
+  onOpenAccount,
+  accountName = null,
+  onLogoutAccount,
   selectedCity,
   onSelectCity,
   cityPhoneCounts = {},
   selectedBrand = 'all',
+  availableBrands = [],
   onSelectBrand,
   selectedCategory = 'all',
   onSelectCategory,
-  onOpenCatalogModal,
+  searchQuery = '',
+  onSearchQueryChange,
 }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isDrawerLocationOpen, setIsDrawerLocationOpen] = useState(false);
   const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
   const [locationSearch, setLocationSearch] = useState('');
   const locationRef = useRef<HTMLDivElement>(null);
@@ -115,37 +127,13 @@ export const Header: React.FC<HeaderProps> = ({
     setIsDrawerOpen(false);
     if (tab === 'sell') {
       openSellModal();
-    } else if (tab === 'buy' && onOpenCatalogModal) {
+    } else if (tab === 'buy') {
       setActiveTab('buy');
-      onOpenCatalogModal();
+      setTimeout(() => document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }), 80);
     } else {
       setActiveTab(tab);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  };
-
-  const handleBrandPick = (brand: string) => {
-    setIsDrawerOpen(false);
-    if (onSelectBrand) {
-      onSelectBrand(brand);
-    }
-    setActiveTab('buy');
-    setTimeout(() => {
-      const el = document.getElementById('catalog-section');
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
-  };
-
-  const handleCategoryPick = (cat: string) => {
-    setIsDrawerOpen(false);
-    if (onSelectCategory) {
-      onSelectCategory(cat);
-    }
-    setActiveTab('buy');
-    setTimeout(() => {
-      const el = document.getElementById('catalog-section');
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
   };
 
   const brandList = [
@@ -164,7 +152,7 @@ export const Header: React.FC<HeaderProps> = ({
     { name: 'Google Pixel', key: 'Google' },
     { name: 'OnePlus', key: 'OnePlus' },
     { name: 'Boshqa brendlar', key: 'Boshqa' },
-  ];
+  ].filter((brand) => availableBrands.includes(brand.key));
 
   const phoneTypesList = [
     { id: 'flagship', label: 'Flagman', icon: Sparkles, color: 'text-amber-400' },
@@ -180,10 +168,9 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <>
       <header className="sticky top-0 z-40 w-full bg-[#0b0d13]/95 backdrop-blur-xl border-b border-white/[0.08]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
-          
-          {/* LEFT: 3-line hamburger menu + Brand Logo */}
-          <div className="flex items-center gap-3">
+
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+          <div className="w-full flex flex-wrap items-center gap-1 sm:gap-2">
             {/* 3 ta chiziqcha (Hamburger Menu button) */}
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -191,35 +178,40 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => setIsDrawerOpen(true)}
               aria-label="Asosiy menyu"
               title="Menyu (3 ta chiziqcha)"
-              className="p-2.5 rounded-xl bg-white/[0.05] hover:bg-amber-400/15 border border-white/[0.1] hover:border-amber-400/40 text-amber-400 transition-all cursor-pointer flex items-center justify-center shrink-0 shadow-sm"
+              className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl border border-white/[0.1] bg-white/[0.05] p-2.5 text-amber-400 shadow-sm transition-all hover:border-amber-400/40 hover:bg-amber-400/15"
             >
               <Menu className="w-5 h-5 stroke-[2.5]" />
             </motion.button>
 
-            {/* Brand Logo */}
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => {
-                setActiveTab('buy');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="flex items-center gap-2.5 text-left group cursor-pointer focus:outline-none shrink-0"
-            >
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-300 text-black flex items-center justify-center font-black shadow-lg shadow-amber-500/20 group-hover:shadow-amber-400/30 transition-all shrink-0">
-                <Smartphone className="w-5 h-5 stroke-[2.5]" />
-              </div>
-              <span className="text-lg sm:text-xl font-black tracking-tight text-white hidden xs:inline sm:inline">
-                Mobile<span className="text-amber-400">Bozor</span>
-              </span>
-            </motion.button>
-          </div>
+            <div className="relative order-last basis-full sm:order-none sm:min-w-48 sm:flex-1">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(event) => onSearchQueryChange?.(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    setActiveTab('buy');
+                    setTimeout(() => document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }), 80);
+                  }
+                }}
+                placeholder="Telefon brendi yoki turini qidiring..."
+                aria-label="Telefon brendi yoki turini qidirish"
+                className="min-h-11 w-full rounded-xl border border-white/[0.12] bg-white/[0.05] py-2 pl-9 pr-3 text-sm text-white placeholder-slate-400 focus:border-amber-400/60 focus:outline-none"
+              />
+            </div>
 
-          {/* CENTER: Clean Location Selector Button */}
-          <div ref={locationRef} className="relative flex-1 max-w-xs sm:max-w-sm mx-2">
+          {/* E'lon berish */}
+            <motion.button type="button" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={openSellModal} className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-300 px-3 text-xs font-bold text-black shadow-md shadow-amber-400/20 transition-all hover:from-amber-300 hover:to-amber-200 sm:text-sm">
+              <PlusCircle className="w-4 h-4 stroke-[2.5]" />
+              <span className="hidden sm:inline">E'lon berish</span>
+              <span className="sm:hidden">Sotish</span>
+            </motion.button>
+
+            <div ref={locationRef} className="relative w-24 shrink-0 sm:w-32">
             <button
               onClick={() => setIsLocationDropdownOpen((prev) => !prev)}
-              className={`w-full px-3 py-1.5 sm:py-2 rounded-xl border text-left flex items-center justify-between gap-2 transition-all cursor-pointer shadow-sm ${
+              className={`min-h-11 w-full rounded-lg border px-2 py-1 text-left flex items-center justify-between gap-2 transition-all shadow-sm sm:py-1.5 ${
                 isLocationDropdownOpen || selectedCity !== 'Barcha viloyatlar'
                   ? 'bg-amber-400/15 border-amber-400/80 text-white shadow-amber-500/10'
                   : 'bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.1] text-slate-200'
@@ -257,7 +249,7 @@ export const Header: React.FC<HeaderProps> = ({
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 6, scale: 0.98 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute left-0 right-0 sm:right-auto sm:w-[380px] top-full mt-2 z-50 p-3 rounded-2xl bg-[#0f121d]/98 backdrop-blur-2xl border border-amber-400/40 shadow-2xl shadow-black/90"
+                  className="absolute left-0 top-full z-50 mt-2 w-[min(24rem,calc(100vw-2rem))] rounded-2xl border border-amber-400/40 bg-[#0f121d]/98 p-3 shadow-2xl shadow-black/90 backdrop-blur-2xl sm:right-auto sm:w-[380px]"
                 >
                   <div className="relative mb-2.5">
                     <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -320,68 +312,50 @@ export const Header: React.FC<HeaderProps> = ({
             </AnimatePresence>
           </div>
 
-          {/* RIGHT: Compact Clean Controls */}
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-            {/* Currency */}
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={toggleCurrency}
-              className="px-2.5 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-xs font-mono font-bold text-slate-200 transition-colors cursor-pointer"
-            >
+          {/* UZS va savat */}
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+            <motion.button type="button" whileTap={{ scale: 0.95 }} onClick={toggleCurrency} aria-label={`Valyutani almashtirish, hozir ${currency}`} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.05] px-2.5 text-xs font-mono font-bold text-slate-200 transition-colors hover:bg-white/[0.1]">
               {currency}
             </motion.button>
-
-            {/* Cart with Badge */}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={openCart}
-              aria-label="Savat"
-              className="relative p-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-slate-200 transition-colors cursor-pointer"
-            >
-              <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
-              {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-amber-500 to-amber-300 text-black text-[11px] font-black rounded-full flex items-center justify-center font-mono shadow-md">
-                  {cartCount}
-                </span>
-              )}
-            </motion.button>
-
-            {/* Sell CTA button */}
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={openSellModal}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-bold text-black bg-gradient-to-r from-amber-400 to-amber-300 hover:from-amber-300 hover:to-amber-200 rounded-xl transition-all shadow-md shadow-amber-400/20 whitespace-nowrap cursor-pointer"
-            >
-              <PlusCircle className="w-4 h-4 stroke-[2.5]" />
-              <span className="hidden sm:inline">E'lon berish</span>
-              <span className="sm:hidden">Sotish</span>
-            </motion.button>
-
-            {/* Admin Discreet Trigger */}
-            <button
-              onClick={onOpenAdmin}
-              title="Admin kirish"
-              className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-white/[0.04] transition-colors cursor-pointer ml-0.5"
-            >
-              <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-            </button>
           </div>
 
+          {/* Admin panel */}
+          <button type="button" onClick={onOpenAdmin} title="Admin kirish" aria-label="Admin kirish" className="ml-0.5 hidden min-h-11 min-w-11 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-white/[0.04] hover:text-emerald-400 sm:flex">
+            <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+          </button>
         </div>
+          </div>
 
         {/* BOZORNI TAGI: Telefon brendlari va Telefon turlari */}
         <div className="border-t border-white/[0.08] bg-[#0c0e15]/95 backdrop-blur-md px-4 sm:px-6 lg:px-8 py-2">
-          <div className="max-w-7xl mx-auto flex items-center gap-2.5 overflow-x-auto scrollbar-none">
-            {/* 1. Telefon brendlari (11+) */}
+          <div className="max-w-7xl mx-auto space-y-2">
+
+          <div className="relative flex flex-wrap items-center gap-2 overflow-visible sm:gap-2.5">
+            {/* Katalog birinchi o'rinda */}
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => {
+                setActiveTab('buy');
+                setTimeout(() => document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }), 80);
+              }}
+              className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-300 px-3.5 text-xs font-extrabold text-black shadow-sm shadow-amber-400/20 transition-all hover:from-amber-300 hover:to-amber-200 sm:text-sm"
+            >
+              <LayoutGrid className="w-4 h-4 stroke-[2.5]" />
+              <span>Katalog</span>
+            </motion.button>
+
+            {/* Telefon brendlari (11+) */}
             <div ref={brandSubRef} className="relative">
               <button
+                type="button"
+                aria-expanded={isBrandDropdownOpen}
+                aria-haspopup="true"
                 onClick={() => {
                   setIsBrandDropdownOpen(prev => !prev);
                   setIsCategoryDropdownOpen(false);
                 }}
-                className={`px-3.5 py-1.5 sm:py-2 rounded-xl border font-bold text-xs sm:text-sm flex items-center gap-2 transition-all cursor-pointer shadow-sm shrink-0 ${
+                className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border px-3 text-xs font-bold shadow-sm transition-all sm:px-3.5 sm:text-sm ${
                   isBrandDropdownOpen || (selectedBrand && selectedBrand !== 'all')
                     ? 'bg-amber-400/15 border-amber-400 text-amber-300'
                     : 'bg-white/[0.05] hover:bg-white/[0.09] border-white/[0.12] text-white hover:border-amber-400/40'
@@ -390,7 +364,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <Smartphone className="w-4 h-4 text-amber-400" />
                 <span>Telefon brendlari</span>
                 <span className="text-[11px] text-amber-400 font-semibold">
-                  ({!selectedBrand || selectedBrand === 'all' ? '11+' : selectedBrand})
+                  ({!selectedBrand || selectedBrand === 'all' ? brandList.length : selectedBrand})
                 </span>
                 <ChevronDown className={`w-3.5 h-3.5 text-amber-400 transition-transform duration-200 ${
                   isBrandDropdownOpen ? 'rotate-180' : ''
@@ -405,19 +379,19 @@ export const Header: React.FC<HeaderProps> = ({
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 6, scale: 0.98 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute left-0 top-full mt-2 z-50 w-72 sm:w-80 p-3 rounded-2xl bg-[#0f131e]/98 backdrop-blur-2xl border border-amber-400/30 shadow-2xl shadow-black/95"
+                    className="absolute left-0 right-auto top-full z-50 mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-amber-400/30 bg-[#0f131e]/98 p-3 shadow-2xl shadow-black/95 backdrop-blur-2xl min-[334px]:left-[-6.625rem] sm:left-0 sm:w-80"
                   >
                     <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/[0.08]">
                       <span className="text-xs font-bold text-white">Barcha telefon brendlari:</span>
                       <button
                         onClick={() => setIsBrandDropdownOpen(false)}
-                        className="p-1 rounded-lg text-slate-400 hover:text-white cursor-pointer"
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-1 text-slate-400 hover:text-white"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-1.5 max-h-60 overflow-y-auto pr-1 scrollbar-thin">
+                    <div className="grid max-h-[60vh] grid-cols-2 gap-1.5 overflow-y-auto pr-1 scrollbar-thin">
                       {brandList.map((item) => {
                         const isCur = selectedBrand === item.key;
                         return (
@@ -432,7 +406,7 @@ export const Header: React.FC<HeaderProps> = ({
                                 if (el) el.scrollIntoView({ behavior: 'smooth' });
                               }, 80);
                             }}
-                            className={`p-2 rounded-xl text-left transition-all border flex items-center justify-between cursor-pointer ${
+                            className={`flex min-h-11 items-center justify-between rounded-xl border p-2 text-left transition-all ${
                               isCur
                                 ? 'bg-amber-400 text-black border-amber-400 font-bold'
                                 : 'bg-white/[0.03] hover:bg-white/[0.08] border-white/[0.06] text-slate-300'
@@ -468,7 +442,7 @@ export const Header: React.FC<HeaderProps> = ({
                   setIsCategoryDropdownOpen(prev => !prev);
                   setIsBrandDropdownOpen(false);
                 }}
-                className={`px-3.5 py-1.5 sm:py-2 rounded-xl border font-bold text-xs sm:text-sm flex items-center gap-2 transition-all cursor-pointer shadow-sm shrink-0 ${
+                className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border px-3 text-xs font-bold shadow-sm transition-all sm:px-3.5 sm:text-sm ${
                   isCategoryDropdownOpen || (selectedCategory && selectedCategory !== 'all')
                     ? 'bg-amber-400/15 border-amber-400 text-amber-300'
                     : 'bg-white/[0.05] hover:bg-white/[0.09] border-white/[0.12] text-white hover:border-amber-400/40'
@@ -492,7 +466,7 @@ export const Header: React.FC<HeaderProps> = ({
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 6, scale: 0.98 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 z-50 w-72 sm:w-80 p-3 rounded-2xl bg-[#0f131e]/98 backdrop-blur-2xl border border-amber-400/30 shadow-2xl shadow-black/95"
+                    className="absolute left-0 top-full z-50 mt-2 w-[min(18rem,calc(100vw-1.5rem))] rounded-2xl border border-amber-400/30 bg-[#0f131e]/98 p-3 shadow-2xl shadow-black/95 backdrop-blur-2xl sm:left-auto sm:right-0 sm:w-80"
                   >
                     <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/[0.08]">
                       <div className="flex items-center gap-2">
@@ -501,7 +475,7 @@ export const Header: React.FC<HeaderProps> = ({
                       </div>
                       <button
                         onClick={() => setIsCategoryDropdownOpen(false)}
-                        className="p-1 rounded-lg text-slate-400 hover:text-white cursor-pointer"
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-1 text-slate-400 hover:text-white"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -523,7 +497,7 @@ export const Header: React.FC<HeaderProps> = ({
                                 if (el) el.scrollIntoView({ behavior: 'smooth' });
                               }, 80);
                             }}
-                            className={`p-2 rounded-xl text-left transition-all border flex items-center justify-between cursor-pointer ${
+                            className={`flex min-h-11 items-center justify-between rounded-xl border p-2 text-left transition-all ${
                               isCur
                                 ? 'bg-amber-400 text-black border-amber-400 font-bold shadow-md shadow-amber-400/20'
                                 : 'bg-white/[0.03] hover:bg-white/[0.08] border-white/[0.06] text-slate-200'
@@ -555,25 +529,7 @@ export const Header: React.FC<HeaderProps> = ({
               </AnimatePresence>
             </div>
 
-            {/* 3. Katalog tugmasi (qator oxirida) */}
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => {
-                if (onOpenCatalogModal) {
-                  onOpenCatalogModal();
-                } else {
-                  setActiveTab('buy');
-                  const el = document.getElementById('catalog-section');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }
-              }}
-              className="px-3.5 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-300 hover:from-amber-300 hover:to-amber-200 text-black font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-sm shadow-amber-400/20 transition-all cursor-pointer whitespace-nowrap shrink-0"
-            >
-              <LayoutGrid className="w-4 h-4 stroke-[2.5]" />
-              <span>Katalog</span>
-            </motion.button>
-
+          </div>
           </div>
         </div>
       </header>
@@ -604,7 +560,7 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="p-4 sm:p-5 border-b border-white/[0.08] flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-300 text-black flex items-center justify-center font-black shadow-md shadow-amber-500/20">
-                    <Smartphone className="w-5 h-5 stroke-[2.5]" />
+                    <Smartphone className="w-4 h-4 stroke-[2.5]" />
                   </div>
                   <div>
                     <div className="text-base font-black text-white leading-tight">
@@ -629,17 +585,25 @@ export const Header: React.FC<HeaderProps> = ({
                 
                 {/* 1. Manzilni Tanlash */}
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs font-extrabold text-amber-400 uppercase tracking-wider">
+                  <button
+                    type="button"
+                    aria-expanded={isDrawerLocationOpen}
+                    onClick={() => setIsDrawerLocationOpen((open) => !open)}
+                    className="w-full flex items-center justify-between text-xs font-extrabold text-amber-400 uppercase tracking-wider p-3 rounded-2xl bg-white/[0.03] border border-white/[0.08] cursor-pointer"
+                  >
                     <span className="flex items-center gap-1.5">
                       <MapPin className="w-4 h-4" />
-                      <span>Manzil / Viloyat</span>
+                      <span>Manzil</span>
                     </span>
-                    <span className="text-[11px] text-slate-400 lowercase font-medium">
-                      {selectedCity}
+                    <span className="flex items-center gap-2 min-w-0">
+                      <span className="text-[11px] text-slate-400 normal-case font-medium truncate max-w-40">
+                        {selectedCity}
+                      </span>
+                      <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${isDrawerLocationOpen ? 'rotate-180' : ''}`} />
                     </span>
-                  </div>
+                  </button>
 
-                  <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/[0.08] space-y-2.5">
+                  {isDrawerLocationOpen && <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/[0.08] space-y-2.5">
                     <div className="text-xs text-slate-300 flex items-center justify-between">
                       <span>Joriy hudud:</span>
                       <span className="font-bold text-amber-400">{selectedCity}</span>
@@ -670,7 +634,7 @@ export const Header: React.FC<HeaderProps> = ({
                         );
                       })}
                     </div>
-                  </div>
+                  </div>}
                 </div>
 
                 {/* 2. Asosiy Bo'limlar */}
@@ -785,55 +749,24 @@ export const Header: React.FC<HeaderProps> = ({
                   </button>
                 </div>
 
-                {/* 3. Telefon Turlari (Kategoriya) */}
-                <div className="space-y-2">
-                  <div className="text-xs font-extrabold text-slate-400 uppercase tracking-wider px-1">
-                    Telefon Turlari
-                  </div>
+              </div>
 
+              {/* Drawer account and footer actions */}
+              <div className="px-4 sm:px-5 pt-4 border-t border-white/[0.08] bg-[#090b11]">
+                {accountName ? (
+                  <div className="flex items-center justify-between gap-3 rounded-xl bg-white/[0.04] p-3">
+                    <button type="button" onClick={() => { setIsDrawerOpen(false); onOpenAccount('login'); }} className="flex min-w-0 items-center gap-2 text-left text-sm text-white hover:text-amber-300">
+                      <UserRound className="h-4 w-4 shrink-0 text-amber-400" />
+                      <span className="truncate">{accountName}</span>
+                    </button>
+                    <button type="button" onClick={() => { setIsDrawerOpen(false); onLogoutAccount(); }} className="shrink-0 text-xs font-semibold text-slate-300 hover:text-amber-300">Chiqish</button>
+                  </div>
+                ) : (
                   <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { id: 'flagship', label: 'Flagman', icon: Sparkles, color: 'text-amber-400' },
-                      { id: 'gaming', label: 'O\'yin (Gaming)', icon: Gamepad2, color: 'text-emerald-400' },
-                      { id: 'camera', label: 'Kamera', icon: Camera, color: 'text-rose-400' },
-                      { id: 'foldable', label: 'Bukiluvchi', icon: Layers, color: 'text-cyan-400' },
-                      { id: 'budget', label: 'Hamyonbop', icon: Tag, color: 'text-indigo-400' },
-                      { id: 'all', label: 'Barcha turlar', icon: Smartphone, color: 'text-white' },
-                    ].map((cat) => {
-                      const Icon = cat.icon;
-                      return (
-                        <button
-                          key={cat.id}
-                          onClick={() => handleCategoryPick(cat.id)}
-                          className="p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.06] text-left flex items-center gap-2 cursor-pointer transition-all"
-                        >
-                          <Icon className={`w-4 h-4 ${cat.color} shrink-0`} />
-                          <span className="text-xs font-bold text-slate-200 truncate">{cat.label}</span>
-                        </button>
-                      );
-                    })}
+                    <button type="button" onClick={() => { setIsDrawerOpen(false); onOpenAccount('login'); }} className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm font-bold text-white hover:border-amber-400/60"><UserRound className="mr-1.5 inline h-4 w-4" />Akkauntga kirish</button>
+                    <button type="button" onClick={() => { setIsDrawerOpen(false); onOpenAccount('register'); }} className="rounded-xl bg-amber-400 px-3 py-2.5 text-sm font-extrabold text-black hover:bg-amber-300">Ro‘yxatdan o‘tish</button>
                   </div>
-                </div>
-
-                {/* 4. Telefon Brendlari (11+ brend) */}
-                <div className="space-y-2">
-                  <div className="text-xs font-extrabold text-slate-400 uppercase tracking-wider px-1">
-                    Telefon Brendlari
-                  </div>
-
-                  <div className="flex flex-wrap gap-1.5">
-                    {brandList.map((b) => (
-                      <button
-                        key={b.key}
-                        onClick={() => handleBrandPick(b.key)}
-                        className="px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-amber-400 hover:text-black border border-white/[0.08] text-xs font-bold text-slate-200 transition-all cursor-pointer"
-                      >
-                        {b.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
+                )}
               </div>
 
               {/* Drawer Bottom Bar: Valyuta & Admin */}

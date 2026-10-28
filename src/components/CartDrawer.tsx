@@ -42,7 +42,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
   const handleCheckout = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerName.trim() || customerPhone.length < 9) {
+    const normalizedPhone = customerPhone.replace(/\D/g, '');
+    if (!customerName.trim() || !/^998\d{9}$/.test(normalizedPhone)) {
       setError('Iltimos, ismingiz va to\'liq telefon raqamingizni kiriting.');
       return;
     }
@@ -57,7 +58,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     const newOrder: OrderDetails = {
       id: `MB-${Math.floor(100000 + Math.random() * 900000)}`,
       customerName: customerName.trim(),
-      customerPhone: customerPhone.trim(),
+      customerPhone: `+${normalizedPhone}`,
       city: selectedCity,
       address: address.trim() || 'Do\'kondan olib ketish',
       deliveryMethod,
@@ -78,13 +79,13 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/75 backdrop-blur-sm">
-      <div className="relative w-full max-w-md bg-[#13161f] border-l border-[#242939] h-full flex flex-col text-white shadow-2xl">
+      <div className="relative flex h-[100dvh] w-full max-w-md flex-col border-l border-[#242939] bg-[#13161f] pb-[env(safe-area-inset-bottom)] text-white shadow-2xl">
         
         {/* Header */}
-        <div className="px-5 py-4 border-b border-[#212534] flex items-center justify-between bg-[#0e1017]">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-2 border-b border-[#212534] bg-[#0e1017] px-3 py-3 sm:px-5 sm:py-4">
+          <div className="flex min-w-0 items-center gap-2">
             <ShoppingBag className="w-5 h-5 text-amber-400" />
-            <h3 className="font-bold text-base text-white">Savat va rasmiylashtirish</h3>
+            <h3 className="min-w-0 break-words text-sm font-bold text-white sm:text-base">Savat va rasmiylashtirish</h3>
             <span className="text-xs bg-[#1f2434] text-slate-300 font-mono px-2 py-0.5 rounded-full">
               {items.reduce((acc, cur) => acc + cur.quantity, 0)}
             </span>
@@ -185,6 +186,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 Yetkazib berish ma'lumotlari:
               </div>
 
+              <p className="text-[11px] leading-relaxed text-amber-200/80 rounded-lg border border-amber-400/20 bg-amber-400/[0.06] p-2.5">
+                Hozircha buyurtma faqat ushbu brauzerda saqlanadi. Saytga buyurtmalarni do'konga yuboradigan backend ulanmagan; Click, Payme va bo'lib to'lash ham hali ishlamaydi.
+              </p>
+
               {error && (
                 <div className="p-2.5 rounded bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs">
                   {error}
@@ -209,6 +214,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   type="tel"
                   required
                   placeholder="+998 90 123 45 67"
+                  autoComplete="tel"
+                  inputMode="tel"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
                   className="w-full py-2 px-3 rounded-lg bg-[#171b26] border border-[#293042] text-xs text-white font-mono focus:outline-none focus:border-amber-400"
@@ -231,10 +238,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               </div>
 
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1">Manzil (ko'cha, uy) *</label>
+                <label className="block text-[11px] text-slate-400 mb-1">Manzil (ko'cha, uy) {deliveryMethod === 'pickup' ? '(ixtiyoriy)' : '*'}</label>
                 <input
                   type="text"
-                  required
+                  required={deliveryMethod !== 'pickup'}
                   placeholder="Masalan: Mirobod tuman, Nukus ko'chasi 15-uy"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
@@ -291,14 +298,16 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       key={p.id}
                       type="button"
                       onClick={() => setPaymentMethod(p.id as any)}
-                      className={`p-2 rounded-lg border text-left transition-colors ${
+                      disabled={p.id !== 'cash_on_delivery'}
+                      aria-disabled={p.id !== 'cash_on_delivery'}
+                      className={`p-2 rounded-lg border text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                         paymentMethod === p.id
                           ? 'bg-amber-400/15 border-amber-400 text-amber-300'
                           : 'bg-[#171b26] border-[#293042] text-slate-300'
                       }`}
                     >
                       <div className="font-semibold">{p.label}</div>
-                      <div className="text-[10px] text-slate-400">{p.sub}</div>
+                      <div className="text-[10px] text-slate-400">{p.id === 'cash_on_delivery' ? p.sub : 'Hozircha ulanmagan'}</div>
                     </button>
                   ))}
                 </div>

@@ -26,8 +26,8 @@ export const CompareModal: React.FC<CompareModalProps> = ({
   const formatPrice = (val: number) => val.toLocaleString('uz-UZ');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-      <div className="relative w-full max-w-5xl bg-[#141822] border border-[#272d3e] rounded-2xl shadow-2xl p-6 sm:p-8 my-8 text-white max-h-[90vh] overflow-y-auto flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 p-2 backdrop-blur-sm sm:items-center sm:p-4">
+      <div className="relative my-auto flex max-h-[calc(100dvh-1rem)] w-full max-w-5xl flex-col overflow-y-auto overscroll-contain rounded-2xl border border-[#272d3e] bg-[#141822] p-4 text-white shadow-2xl sm:my-4 sm:max-h-[90dvh] sm:p-8">
         
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#222736] pb-4 mb-6">

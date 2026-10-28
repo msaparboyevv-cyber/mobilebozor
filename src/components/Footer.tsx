@@ -1,40 +1,37 @@
-import React from 'react';
-import { Smartphone, Phone, Check } from 'lucide-react';
+﻿import React from 'react';
+import { Phone, Check } from 'lucide-react';
 
 interface FooterProps {
   onOpenAdmin?: () => void;
+  onOpenSell?: () => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
-  return (
-    <footer className="border-t border-white/[0.06] bg-[#090b10] py-6 px-4 sm:px-8">
-      <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+export const Footer: React.FC<FooterProps> = ({ onOpenAdmin, onOpenSell }) => (
+  <footer className="border-t border-white/[0.08] bg-[#090b10] px-4 py-8 sm:px-8 sm:py-10">
+    <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 text-sm text-slate-400 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-amber-400 text-black flex items-center justify-center font-bold text-xs">
-            <Smartphone className="w-3.5 h-3.5 stroke-[2.5]" />
-          </div>
-          <span className="font-extrabold text-white text-sm">
-            Mobile<span className="text-amber-400">Bozor</span>
-          </span>
-          <span className="text-slate-600">·</span>
-          <span>© 2026</span>
-          {onOpenAdmin && (
-            <button
-              onClick={onOpenAdmin}
-              title="Admin"
-              aria-label="Admin"
-              className="text-slate-600 hover:text-emerald-400 transition-colors cursor-pointer ml-1 p-0.5 focus:outline-none"
-            >
-              <Check className="w-3.5 h-3.5" />
-            </button>
-          )}
+          <span className="text-slate-500">© 2026</span>
+          {onOpenAdmin && <button type="button" onClick={onOpenAdmin} title="Admin" aria-label="Admin" className="ml-1 inline-flex min-h-11 min-w-11 items-center justify-center text-slate-600 transition-colors hover:text-emerald-400"><Check className="h-3.5 w-3.5" /></button>}
         </div>
-
-        <div className="flex items-center gap-2 font-mono text-slate-300">
-          <Phone className="w-3.5 h-3.5 text-amber-400" />
-          <span>+998 71 200 00 00</span>
-        </div>
+        <p className="max-w-xs text-xs leading-5">Telefon topish va sotish uchun e’lonlar maydoni.</p>
       </div>
-    </footer>
-  );
-};
+
+      <nav aria-label="Foydali havolalar" className="space-y-3">
+        <h2 className="text-xs font-extrabold uppercase tracking-wider text-white">Foydali havolalar</h2>
+        <a href="/#catalog-section" className="flex min-h-11 w-fit items-center py-2 hover:text-amber-300">Telefonlar katalogi</a>
+        {onOpenSell && <button type="button" onClick={onOpenSell} className="flex min-h-11 items-center py-2 text-left hover:text-amber-300">E’lon joylashtirish</button>}
+      </nav>
+
+      <div className="space-y-3">
+        <h2 className="text-xs font-extrabold uppercase tracking-wider text-white">Aloqa</h2>
+        <a href="tel:+998712000000" className="flex min-h-11 w-fit items-center gap-2 py-2 font-mono text-slate-300 hover:text-amber-300"><Phone className="h-4 w-4 text-amber-400" />+998 71 200 00 00</a>
+      </div>
+
+      <div className="space-y-3">
+        <h2 className="text-xs font-extrabold uppercase tracking-wider text-white">Huquqiy ma’lumot</h2>
+        <p className="text-xs leading-5">Foydalanish shartlari va maxfiylik hujjatlari hozircha qo‘shilmagan.</p>
+      </div>
+    </div>
+  </footer>
+);

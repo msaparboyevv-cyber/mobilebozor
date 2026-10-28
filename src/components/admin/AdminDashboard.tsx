@@ -37,7 +37,6 @@ interface AdminDashboardProps {
   usdToUzsRate: number;
   onUpdateUsdRate: (newRate: number) => void;
   onExitAdmin: () => void;
-  ownerEmail: string;
   adminPassword: string;
   onUpdateAdminPassword: (newPass: string) => void;
   onLogout: () => void;
@@ -55,7 +54,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   usdToUzsRate,
   onUpdateUsdRate,
   onExitAdmin,
-  ownerEmail,
   adminPassword,
   onUpdateAdminPassword,
   onLogout,
@@ -67,10 +65,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Rate edit state
   const [tempRate, setTempRate] = useState<number>(usdToUzsRate);
   const [rateSuccess, setRateSuccess] = useState(false);
+  const [rateError, setRateError] = useState('');
 
   // Password change state
   const [newPasswordInput, setNewPasswordInput] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
 
   // Edit Phone Modal state
   const [editingPhone, setEditingPhone] = useState<PhoneListing | null>(null);
@@ -83,6 +83,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [newStorage, setNewStorage] = useState<StorageOption>('256GB');
   const [newPriceUsd, setNewPriceUsd] = useState(900);
   const [newCity, setNewCity] = useState('Toshkent');
+  const [phoneFormError, setPhoneFormError] = useState('');
 
   const formatPrice = (val: number) => val.toLocaleString('uz-UZ');
 
@@ -104,16 +105,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const handleSaveRate = (e: React.FormEvent) => {
     e.preventDefault();
-    if (tempRate > 1000) {
-      onUpdateUsdRate(tempRate);
-      setRateSuccess(true);
-      setTimeout(() => setRateSuccess(false), 2500);
+    if (!Number.isFinite(tempRate) || tempRate < 5000) {
+      setRateError('Kurs 5 000 so‘mdan yuqori bo‘lishi kerak.');
+      return;
     }
+    setRateError('');
+    onUpdateUsdRate(tempRate);
+    setRateSuccess(true);
+    setTimeout(() => setRateSuccess(false), 2500);
   };
 
   const handleAddNewPhoneSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newModel.trim()) return;
+    if (newModel.trim().length < 2 || !newCity.trim()) {
+      setPhoneFormError('Model va shaharni to‘g‘ri kiriting.');
+      return;
+    }
+    if (!Number.isFinite(newPriceUsd) || newPriceUsd < 10) {
+      setPhoneFormError('Narx kamida 10 USD bo‘lishi kerak.');
+      return;
+    }
+    setPhoneFormError('');
 
     const newPhone: PhoneListing = {
       id: `phone-${Date.now()}`,
@@ -137,8 +149,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         name: 'MobileBozor Admin',
         phone: '+998 71 200 00 00',
         type: 'verified_partner',
-        rating: 5.0,
-        dealsCount: 500
+        rating: 0,
+        dealsCount: 0
       },
       images: ['/src/assets/images/hero_smartphones_showcase_1792582840711.jpg'],
       description: `${newBrand} ${newModel} rasmiy kafolat va to'liq UzIMEI bilan.`,
@@ -154,9 +166,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const handleUpdatePhoneSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingPhone) return;
+    if (editingPhone.model.trim().length < 2 || !editingPhone.city.trim() || !Number.isFinite(editingPhone.priceUsd) || editingPhone.priceUsd < 10) {
+      setPhoneFormError('Model, shahar va kamida 10 USD narx kiriting.');
+      return;
+    }
 
     onUpdatePhone({
       ...editingPhone,
+      model: editingPhone.model.trim(),
+      city: editingPhone.city.trim(),
       priceUzs: editingPhone.priceUsd * usdToUzsRate
     });
     setEditingPhone(null);
@@ -203,7 +221,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
             <div className="hidden sm:block text-left">
               <div className="text-xs font-bold text-white leading-none">Bosh Admin</div>
-              <div className="text-[10px] text-amber-400/90 font-mono mt-0.5">{ownerEmail}</div>
+              <div className="text-[10px] text-slate-400 mt-0.5">Administrator</div>
             </div>
 
             <motion.button
@@ -446,7 +464,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <motion.button
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
-                onClick={() => setIsAddPhoneOpen(true)}
+                  onClick={() => { setPhoneFormError(''); setIsAddPhoneOpen(true); }}
                 className="px-4 py-2.5 text-xs font-bold text-black bg-gradient-to-r from-amber-400 to-amber-300 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Plus className="w-4 h-4 stroke-[2.5]" />
@@ -516,14 +534,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       <td className="p-3.5 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
-                            onClick={() => setEditingPhone(phone)}
+                            onClick={() => { setPhoneFormError(''); setEditingPhone(phone); }}
                             className="p-1.5 rounded-lg bg-white/[0.05] text-slate-300 hover:text-white hover:bg-white/[0.1] transition-colors cursor-pointer"
                             title="Tahrirlash"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
                           <button
-                            onClick={() => onDeletePhone(phone.id)}
+                            onClick={() => {
+                              if (window.confirm(`${phone.model} e'lonini o'chirishni tasdiqlaysizmi?`)) onDeletePhone(phone.id);
+                            }}
                             className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-colors cursor-pointer"
                             title="O'chirish"
                           >
@@ -696,7 +716,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       min="5000"
                       step="50"
                       value={tempRate}
-                      onChange={(e) => setTempRate(Number(e.target.value))}
+                      onChange={(e) => { setTempRate(Number(e.target.value)); setRateError(''); }}
                       className="w-full pl-12 pr-4 py-3 rounded-xl bg-black/40 border border-white/[0.1] text-lg font-mono font-black text-amber-400 focus:outline-none focus:border-amber-400"
                     />
                   </div>
@@ -717,6 +737,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     <span>Dollar kursi muvaffaqiyatli yangilandi va barcha telefon narxlariga tatbiq etildi!</span>
                   </div>
                 )}
+                {rateError && <p role="alert" className="text-xs text-rose-300">{rateError}</p>}
               </div>
             </form>
 
@@ -736,7 +757,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   type="password"
                   placeholder="Yangi parol kiriting..."
                   value={newPasswordInput}
-                  onChange={(e) => setNewPasswordInput(e.target.value)}
+                  onChange={(e) => { setNewPasswordInput(e.target.value); setPasswordError(''); }}
                   className="flex-1 py-2.5 px-3.5 rounded-xl bg-black/40 border border-white/[0.1] text-xs font-mono text-white focus:outline-none focus:border-amber-400"
                 />
 
@@ -746,8 +767,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     if (newPasswordInput.trim().length >= 8) {
                       onUpdateAdminPassword(newPasswordInput.trim());
                       setNewPasswordInput('');
+                      setPasswordError('');
                       setPasswordSuccess(true);
                       setTimeout(() => setPasswordSuccess(false), 2500);
+                    } else {
+                      setPasswordError('Yangi parol kamida 8 belgidan iborat bo‘lishi kerak.');
                     }
                   }}
                   className="py-2.5 px-5 text-xs font-bold text-black bg-amber-400 hover:bg-amber-300 rounded-xl transition-all shadow-md cursor-pointer"
@@ -755,6 +779,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   O'zgartirish
                 </motion.button>
               </div>
+
+              {passwordError && <p role="alert" className="text-xs text-rose-300">{passwordError}</p>}
 
               {passwordSuccess && (
                 <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold">
@@ -789,6 +815,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
 
             <form onSubmit={handleAddNewPhoneSubmit} className="space-y-4 text-xs">
+              {phoneFormError && <p role="alert" className="rounded-xl border border-rose-400/25 bg-rose-400/10 px-3 py-2 text-rose-200">{phoneFormError}</p>}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-400 mb-1 font-bold">Brend</label>
@@ -835,10 +862,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <label className="block text-slate-400 mb-1 font-bold">Model nomi</label>
                 <input
                   type="text"
+                  minLength={2}
                   required
                   placeholder="Masalan: iPhone 16 Pro, S24 Ultra..."
                   value={newModel}
-                  onChange={(e) => setNewModel(e.target.value)}
+                  onChange={(e) => { setNewModel(e.target.value); setPhoneFormError(''); }}
                   className="w-full py-2.5 px-3 rounded-xl bg-white/[0.05] border border-white/[0.1] text-white text-xs"
                 />
               </div>
@@ -863,8 +891,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <input
                     type="number"
                     min="10"
+                    required
                     value={newPriceUsd}
-                    onChange={(e) => setNewPriceUsd(Number(e.target.value))}
+                    onChange={(e) => { setNewPriceUsd(Number(e.target.value)); setPhoneFormError(''); }}
                     className="w-full py-2.5 px-3 rounded-xl bg-white/[0.05] border border-white/[0.1] text-white font-mono"
                   />
                 </div>
@@ -874,8 +903,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <label className="block text-slate-400 mb-1 font-bold">Shahar</label>
                 <input
                   type="text"
+                  required
                   value={newCity}
-                  onChange={(e) => setNewCity(e.target.value)}
+                  onChange={(e) => { setNewCity(e.target.value); setPhoneFormError(''); }}
                   className="w-full py-2.5 px-3 rounded-xl bg-white/[0.05] border border-white/[0.1] text-white"
                 />
               </div>
@@ -912,12 +942,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
 
             <form onSubmit={handleUpdatePhoneSubmit} className="space-y-4 text-xs">
+              {phoneFormError && <p role="alert" className="rounded-xl border border-rose-400/25 bg-rose-400/10 px-3 py-2 text-rose-200">{phoneFormError}</p>}
               <div>
                 <label className="block text-slate-400 mb-1 font-bold">Model nomi</label>
                 <input
                   type="text"
+                  minLength={2}
+                  required
                   value={editingPhone.model}
-                  onChange={(e) => setEditingPhone({ ...editingPhone, model: e.target.value })}
+                  onChange={(e) => { setEditingPhone({ ...editingPhone, model: e.target.value }); setPhoneFormError(''); }}
                   className="w-full py-2.5 px-3 rounded-xl bg-white/[0.05] border border-white/[0.1] text-white"
                 />
               </div>
@@ -942,8 +975,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <label className="block text-slate-400 mb-1 font-bold">Narxi (USD)</label>
                   <input
                     type="number"
+                    min="10"
+                    required
                     value={editingPhone.priceUsd}
-                    onChange={(e) => setEditingPhone({ ...editingPhone, priceUsd: Number(e.target.value) })}
+                    onChange={(e) => { setEditingPhone({ ...editingPhone, priceUsd: Number(e.target.value) }); setPhoneFormError(''); }}
                     className="w-full py-2.5 px-3 rounded-xl bg-white/[0.05] border border-white/[0.1] text-white font-mono"
                   />
                 </div>
@@ -953,8 +988,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <label className="block text-slate-400 mb-1 font-bold">Shahar</label>
                 <input
                   type="text"
+                  required
                   value={editingPhone.city}
-                  onChange={(e) => setEditingPhone({ ...editingPhone, city: e.target.value })}
+                  onChange={(e) => { setEditingPhone({ ...editingPhone, city: e.target.value }); setPhoneFormError(''); }}
                   className="w-full py-2.5 px-3 rounded-xl bg-white/[0.05] border border-white/[0.1] text-white"
                 />
               </div>

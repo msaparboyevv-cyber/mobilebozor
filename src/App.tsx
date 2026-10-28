@@ -9,15 +9,24 @@ import { TradeInCalculator } from './components/TradeInCalculator';
 import { PhoneDetailModal } from './components/PhoneDetailModal';
 import { CompareModal } from './components/CompareModal';
 import { CartDrawer } from './components/CartDrawer';
+import { WishlistDrawer } from './components/WishlistDrawer';
 import { OrderSuccessModal } from './components/OrderSuccessModal';
 import { Footer } from './components/Footer';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { AdminLoginModal } from './components/admin/AdminLoginModal';
-import { ArrowLeftRight, CheckCircle2, Sparkles, PlusCircle } from 'lucide-react';
+import { AccountModal, AccountUser } from './components/AccountModal';
+import { WelcomeScreen } from './components/WelcomeScreen';
+import { ArrowLeftRight, CheckCircle2, Sparkles, PlusCircle, ShoppingBag, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
-  const OWNER_EMAIL = 'msaparboyevv@gmail.com';
+  const [hasEnteredSite, setHasEnteredSite] = useState(false);
+
+  useEffect(() => {
+    if (hasEnteredSite) return;
+    const timer = window.setTimeout(() => setHasEnteredSite(true), 2000);
+    return () => window.clearTimeout(timer);
+  }, [hasEnteredSite]);
 
   // Admin authentication state
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
@@ -41,10 +50,21 @@ export default function App() {
   // Manzil / Joylashuv bo'yicha filter
   const [selectedCity, setSelectedCity] = useState<string>('Barcha viloyatlar');
   const [selectedBrand, setSelectedBrand] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<any>('all');
   const [isCatalogModalOpen, setIsCatalogModalOpen] = useState(false);
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [accountModalMode, setAccountModalMode] = useState<'login' | 'register'>('login');
+  const [accountUser, setAccountUser] = useState<AccountUser | null>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('mb_account_session') || 'null');
+      return saved && typeof saved.name === 'string' && typeof saved.email === 'string' ? saved : null;
+    } catch {
+      return null;
+    }
+  });
   const [isAdminView, setIsAdminView] = useState(false);
 
   // Dollar exchange rate
@@ -121,6 +141,18 @@ export default function App() {
     }
     return [];
   });
+  const [viewCounts, setViewCounts] = useState<Record<string, number>>(() => {
+    try {
+      const savedViews = JSON.parse(localStorage.getItem('mb_product_views') || '{}');
+      if (!savedViews || typeof savedViews !== 'object' || Array.isArray(savedViews)) return {};
+      return Object.entries(savedViews).reduce<Record<string, number>>((counts, [id, count]) => {
+        if (typeof count === 'number' && Number.isFinite(count) && count > 0) counts[id] = count;
+        return counts;
+      }, {});
+    } catch {
+      return {};
+    }
+  });
 
   const [comparingPhones, setComparingPhones] = useState<PhoneListing[]>([]);
   const [activeTab, setActiveTab] = useState<'buy' | 'sell' | 'tradein' | 'compare'>('buy');
@@ -128,6 +160,7 @@ export default function App() {
   const [selectedPhone, setSelectedPhone] = useState<PhoneListing | null>(null);
   const [isSellModalOpen, setIsSellModalOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
   const [lastOrder, setLastOrder] = useState<OrderDetails | null>(null);
 
@@ -202,6 +235,10 @@ export default function App() {
     try { localStorage.setItem('mb_favorites', JSON.stringify(favoriteIds)); } catch (error) { console.error('Sevimlilarni saqlab bo‘lmadi', error); }
   }, [favoriteIds]);
 
+  useEffect(() => {
+    try { localStorage.setItem('mb_product_views', JSON.stringify(viewCounts)); } catch (error) { console.error('Ko‘rish tarixini saqlab bo‘lmadi', error); }
+  }, [viewCounts]);
+
   // Cart actions
   const handleAddToCart = (phone: PhoneListing) => {
     setCart((prev) => {
@@ -243,6 +280,11 @@ export default function App() {
     setFavoriteIds((prev) =>
       prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]
     );
+  };
+
+  const handleSelectPhone = (phone: PhoneListing) => {
+    setViewCounts((previous) => ({ ...previous, [phone.id]: (previous[phone.id] || 0) + 1 }));
+    setSelectedPhone(phone);
   };
 
   const handleToggleCompare = (phone: PhoneListing) => {
@@ -331,6 +373,10 @@ export default function App() {
     showToast("Admin seansidan chiqildi.");
   };
 
+  if (!hasEnteredSite) {
+    return <WelcomeScreen />;
+  }
+
   // If Admin View is active, render the Admin Console
   if (isAdminView && isAdminAuthenticated) {
     return (
@@ -346,7 +392,6 @@ export default function App() {
         usdToUzsRate={usdRate}
         onUpdateUsdRate={handleAdminUpdateUsdRate}
         onExitAdmin={() => setIsAdminView(false)}
-        ownerEmail={OWNER_EMAIL}
         adminPassword={adminPassword}
         onUpdateAdminPassword={handleAdminUpdatePassword}
         onLogout={handleAdminLogout}
@@ -356,7 +401,7 @@ export default function App() {
 
   // Otherwise, render Storefront
   return (
-    <div className="min-h-screen flex flex-col bg-[#0b0d13] text-[#f1f3f7]">
+    <div className="flex min-h-dvh flex-col bg-[#0b0d13] pb-20 text-[#f1f3f7] sm:pb-0">
       
       {/* Header */}
       <Header
@@ -382,14 +427,19 @@ export default function App() {
             setIsLoginModalOpen(true);
           }
         }}
+        onOpenAccount={(mode) => { setAccountModalMode(mode); setIsAccountModalOpen(true); }}
+        accountName={accountUser?.name}
+        onLogoutAccount={() => { localStorage.removeItem('mb_account_session'); setAccountUser(null); }}
         selectedCity={selectedCity}
         onSelectCity={handleSelectCity}
         cityPhoneCounts={cityPhoneCounts}
         selectedBrand={selectedBrand}
+        availableBrands={[...new Set(phones.map((phone) => phone.brand))]}
         onSelectBrand={handleSelectBrand}
         selectedCategory={selectedCategory}
         onSelectCategory={handleSelectCategory}
-        onOpenCatalogModal={() => setIsCatalogModalOpen(true)}
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
       />
 
       {/* Main Views with Motion Transition */}
@@ -406,26 +456,25 @@ export default function App() {
               transition={{ duration: 0.25 }}
             >
               <Hero
-                selectedBrand={selectedBrand}
-                selectedCategory={selectedCategory}
-                onBrowseClick={() => {
-                  setIsCatalogModalOpen(true);
-                }}
-                onSellClick={() => setIsSellModalOpen(true)}
-                onTradeInClick={() => {
-                  setActiveTab('tradein');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
+                phones={phones}
+                currency={currency}
+                onSelectPhone={handleSelectPhone}
+                onAddToCart={handleAddToCart}
+                comparingPhoneIds={comparingPhones.map((phone) => phone.id)}
+                onToggleCompare={handleToggleCompare}
+                favoriteIds={favoriteIds}
+                onToggleFavorite={handleToggleFavorite}
               />
 
               <PhoneCatalog
                 phones={phones}
                 currency={currency}
-                onSelectPhone={(phone) => setSelectedPhone(phone)}
+                onSelectPhone={handleSelectPhone}
                 onAddToCart={handleAddToCart}
                 comparingPhoneIds={comparingPhones.map((p) => p.id)}
                 onToggleCompare={handleToggleCompare}
                 favoriteIds={favoriteIds}
+                viewCounts={viewCounts}
                 onToggleFavorite={handleToggleFavorite}
                 onOpenSellModal={() => setIsSellModalOpen(true)}
                 selectedCity={selectedCity}
@@ -434,6 +483,8 @@ export default function App() {
                 onSelectBrand={handleSelectBrand}
                 selectedCategory={selectedCategory}
                 onSelectCategory={handleSelectCategory}
+                searchQuery={searchQuery}
+                onSearchQueryChange={setSearchQuery}
                 isCatalogModalOpen={isCatalogModalOpen}
                 setIsCatalogModalOpen={setIsCatalogModalOpen}
               />
@@ -531,12 +582,39 @@ export default function App() {
         </AnimatePresence>
       </main>
 
+      <div className="fixed inset-x-3 bottom-[max(env(safe-area-inset-bottom),0.75rem)] z-40 mx-auto flex w-[calc(100%-1.5rem)] max-w-[22rem] items-center justify-center gap-2 sm:inset-x-auto sm:bottom-4 sm:right-4 sm:mx-0 sm:w-auto sm:max-w-none">
+        <motion.button
+          type="button"
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => setIsWishlistOpen(true)}
+          aria-label={`Istaklarni ochish, ${favoriteIds.length} ta telefon`}
+          className="inline-flex min-h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-full border border-rose-300/50 bg-[#171923] px-3 text-sm font-extrabold text-white shadow-xl shadow-black/40 transition hover:border-rose-300 hover:bg-[#222431] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300 sm:flex-none sm:px-4"
+        >
+          <Heart className="h-5 w-5 text-rose-400" aria-hidden="true" />
+          <span>Istaklar</span>
+          {favoriteIds.length > 0 && <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-rose-400/20 px-1.5 text-xs font-black tabular-nums text-rose-200">{favoriteIds.length}</span>}
+        </motion.button>
+        <motion.button
+          type="button"
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => setIsCartOpen(true)}
+          aria-label={`Savatni ochish, ${cart.reduce((sum, item) => sum + item.quantity, 0)} ta mahsulot`}
+          className="inline-flex min-h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-full border border-amber-200/70 bg-amber-400 px-3 text-sm font-extrabold text-black shadow-xl shadow-black/40 transition hover:bg-amber-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:flex-none sm:px-4"
+        >
+          <ShoppingBag className="h-5 w-5" aria-hidden="true" />
+          <span>Savat</span>
+          {cart.some((item) => item.quantity > 0) && <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-black/15 px-1.5 text-xs font-black tabular-nums">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>}
+        </motion.button>
+      </div>
+
       {/* Floating Compare Button */}
       {comparingPhones.length > 0 && (
         <motion.div 
           initial={{ scale: 0, y: 20 }}
           animate={{ scale: 1, y: 0 }}
-          className="fixed bottom-6 right-6 z-30"
+          className="fixed bottom-36 right-4 z-30"
         >
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -557,7 +635,7 @@ export default function App() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl bg-[#1a202c]/95 backdrop-blur-md border border-amber-400/40 text-amber-300 text-xs font-bold shadow-2xl flex items-center gap-2"
+            className="fixed bottom-52 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl bg-[#1a202c]/95 backdrop-blur-md border border-amber-400/40 text-amber-300 text-xs font-bold shadow-2xl flex items-center gap-2"
           >
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
             <span>{toastMessage}</span>
@@ -573,11 +651,21 @@ export default function App() {
           setIsAdminAuthenticated(true);
           setIsLoginModalOpen(false);
           setIsAdminView(true);
-          showToast(`Xush kelibsiz, Bosh Admin (${OWNER_EMAIL})!`);
+          showToast('Xush kelibsiz, Bosh Admin!');
         }}
+        onSetInitialPassword={handleAdminUpdatePassword}
         adminPassword={adminPassword}
-        ownerEmail={OWNER_EMAIL}
       />
+
+      {isAccountModalOpen && (
+        <AccountModal
+          mode={accountModalMode}
+          account={accountUser}
+          onClose={() => setIsAccountModalOpen(false)}
+          onAuthenticated={(user) => { setAccountUser(user); setIsAccountModalOpen(false); showToast(`Xush kelibsiz, ${user.name}!`); }}
+          onLogout={() => { localStorage.removeItem('mb_account_session'); setAccountUser(null); setIsAccountModalOpen(false); showToast('Akkauntdan chiqdingiz.'); }}
+        />
+      )}
 
       {/* Modals & Drawers */}
       <SellPhoneModal
@@ -597,6 +685,8 @@ export default function App() {
         onToggleCompare={handleToggleCompare}
         isFavorite={selectedPhone ? favoriteIds.includes(selectedPhone.id) : false}
         onToggleFavorite={handleToggleFavorite}
+        listings={phones}
+        onSelectListing={handleSelectPhone}
       />
 
       <CompareModal
@@ -624,6 +714,18 @@ export default function App() {
         onOrderSuccess={handleOrderSuccess}
       />
 
+      <WishlistDrawer
+        isOpen={isWishlistOpen}
+        phones={phones.filter((phone) => favoriteIds.includes(phone.id))}
+        currency={currency}
+        comparingPhoneIds={comparingPhones.map((phone) => phone.id)}
+        onClose={() => setIsWishlistOpen(false)}
+        onSelectPhone={handleSelectPhone}
+        onAddToCart={handleAddToCart}
+        onToggleCompare={handleToggleCompare}
+        onToggleFavorite={handleToggleFavorite}
+      />
+
       <OrderSuccessModal
         order={lastOrder}
         onClose={() => setLastOrder(null)}
@@ -631,6 +733,7 @@ export default function App() {
 
       {/* Clean 1-line Footer */}
       <Footer
+        onOpenSell={() => setIsSellModalOpen(true)}
         onOpenAdmin={() => {
           if (isAdminAuthenticated) {
             setIsAdminView(true);
