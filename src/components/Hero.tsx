@@ -16,15 +16,15 @@ interface HeroProps {
 export const Hero: React.FC<HeroProps> = ({ phones, currency, onSelectPhone, onAddToCart, comparingPhoneIds, onToggleCompare, favoriteIds, onToggleFavorite }) => {
   const featuredPhones = [...phones]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 3);
+    .slice(0, 4);
 
   return (
     <section aria-labelledby="hero-listings-title" className="relative isolate overflow-hidden border-b border-white/[0.08] bg-[#090b10]">
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_20%_0%,rgba(245,158,11,0.16),transparent_42%),linear-gradient(180deg,#10131c_0%,#090b10_100%)]" />
       <div className="mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6 sm:py-9 lg:px-8">
-        <h1 id="hero-listings-title" className="text-xl font-black text-white sm:text-2xl">Telefonlar va narxlari</h1>
+        <h1 id="hero-listings-title" className="text-lg font-black text-white sm:text-xl">Telefonlar va narxlari</h1>
         {featuredPhones.length > 0 ? (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {featuredPhones.map((phone) => (
               <PhoneCard
                 key={phone.id}

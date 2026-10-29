@@ -1,5 +1,9 @@
 import { PhoneListing, OrderDetails, TradeInRequest, PhoneBrand, PhoneCategory } from '../types';
 
+const iphoneImage = new URL('../assets/images/phone_iphone_titanium_1792582841706.jpg', import.meta.url).href;
+const samsungImage = new URL('../assets/images/phone_samsung_ultra_1792582841173.jpg', import.meta.url).href;
+const heroImage = new URL('../assets/images/hero_smartphones_showcase_1792582840711.jpg', import.meta.url).href;
+
 export const USD_TO_UZS_RATE = 12850;
 
 export const PHONE_CATEGORIES: { id: PhoneCategory | 'all'; label: string; desc: string }[] = [
@@ -179,8 +183,8 @@ export const INITIAL_PHONE_LISTINGS: PhoneListing[] = [
       dealsCount: 380
     },
     images: [
-      '/src/assets/images/phone_iphone_titanium_1792582841706.jpg',
-      '/src/assets/images/hero_smartphones_showcase_1792582840711.jpg'
+      iphoneImage,
+      heroImage
     ],
     description: 'Yangi avlod flagmani: Apple iPhone 18 Pro Max! A19 Pro neyron chipi, titan korpus va periskop zum. To\'liq UzIMEI ro\'yxatdan o\'tgan.',
     createdAt: '2026-10-21T05:50:00Z',
@@ -217,8 +221,8 @@ export const INITIAL_PHONE_LISTINGS: PhoneListing[] = [
       dealsCount: 260
     },
     images: [
-      '/src/assets/images/phone_iphone_titanium_1792582841706.jpg',
-      '/src/assets/images/hero_smartphones_showcase_1792582840711.jpg'
+      iphoneImage,
+      heroImage
     ],
     description: 'Yangi Apple iPhone 18 Pro 256GB. Kompakt o\'lcham va flagman quvvati. 100% original, to\'liq UzIMEI kafolatlangan.',
     createdAt: '2026-10-21T05:40:00Z',
@@ -255,7 +259,7 @@ export const INITIAL_PHONE_LISTINGS: PhoneListing[] = [
       dealsCount: 54
     },
     images: [
-      '/src/assets/images/phone_samsung_ultra_1792582841173.jpg'
+      samsungImage
     ],
     description: '200MP sun\'iy intellektli kamera, 100x Space Zoom va titanium rom. G\'ilofda ehtiyotlab tutilgan.',
     createdAt: '2026-10-19T14:15:00Z',
@@ -292,7 +296,7 @@ export const INITIAL_PHONE_LISTINGS: PhoneListing[] = [
       dealsCount: 180
     },
     images: [
-      '/src/assets/images/phone_samsung_ultra_1792582841173.jpg'
+      samsungImage
     ],
     description: 'Katta bukiluvchi ekran: planshet va smartfon 2 tasi 1 da! Eng yangi yupqa korpus va menteşe tizimi.',
     createdAt: '2026-10-21T02:10:00Z',
@@ -329,7 +333,7 @@ export const INITIAL_PHONE_LISTINGS: PhoneListing[] = [
       dealsCount: 88
     },
     images: [
-      '/src/assets/images/phone_samsung_ultra_1792582841173.jpg'
+      samsungImage
     ],
     description: 'Kompakt bukiluvchi cho\'ntakbop flagman! 50MP kamera va katta tashqi ekran (FlexWindow).',
     createdAt: '2026-10-21T04:10:00Z',
@@ -550,7 +554,7 @@ export const INITIAL_PHONE_LISTINGS: PhoneListing[] = [
       dealsCount: 112
     },
     images: [
-      '/src/assets/images/phone_iphone_titanium_1792582841706.jpg'
+      iphoneImage
     ],
     description: 'A17 Pro protsessor, titan korpus, 120Hz ProMotion ekrani. Batareya 94%. Usta ko\'rmagan.',
     createdAt: '2026-10-18T18:00:00Z',
@@ -587,7 +591,7 @@ export const INITIAL_PHONE_LISTINGS: PhoneListing[] = [
       dealsCount: 19
     },
     images: [
-      '/src/assets/images/phone_iphone_titanium_1792582841706.jpg'
+      iphoneImage
     ],
     description: 'Juda mashhur va ishonchli iPhone 13. Kameralari tiniq, Face ID va True Tone ishlaydi.',
     createdAt: '2026-10-17T09:30:00Z',
@@ -985,7 +989,7 @@ export const INITIAL_PHONE_LISTINGS: PhoneListing[] = [
       dealsCount: 520
     },
     images: [
-      '/src/assets/images/phone_samsung_ultra_1792582841173.jpg'
+      samsungImage
     ],
     description: '2025/2026 yil flagmani: Snapdragon 8 Elite for Galaxy, dumaloqlangan yengil titan rom, Galaxy AI 2.0 va 200MP sun\'iy aql kamerasi.',
     createdAt: '2026-10-21T03:10:00Z',

@@ -29,7 +29,7 @@ export const WishlistDrawer: React.FC<WishlistDrawerProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex justify-end bg-black/75 backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+    <div className="fixed inset-0 z-50 flex items-end justify-end bg-black/75 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))]" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <section role="dialog" aria-modal="true" aria-labelledby="wishlist-title" className="flex h-full w-full max-w-3xl flex-col border-l border-white/10 bg-[#10131c] text-white shadow-2xl">
         <header className="flex items-center justify-between border-b border-white/10 px-4 py-4 sm:px-6">
           <div className="flex items-center gap-2">

@@ -17,14 +17,14 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-      <div className="relative w-full max-w-lg bg-[#141822] border border-[#272d3e] rounded-2xl shadow-2xl p-6 sm:p-8 my-8 text-white space-y-6">
+      <div role="dialog" aria-modal="true" aria-labelledby="order-success-title" className="relative w-full max-w-lg bg-[#141822] border border-[#272d3e] rounded-2xl shadow-2xl p-6 sm:p-8 my-8 text-white space-y-6">
         
         {/* Success Icon */}
         <div className="text-center space-y-3">
           <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center">
             <PackageCheck className="w-9 h-9" />
           </div>
-          <h2 className="text-2xl font-extrabold text-white">Buyurtmangiz qabul qilindi!</h2>
+          <h2 id="order-success-title" className="text-2xl font-extrabold text-white">Buyurtmangiz qabul qilindi!</h2>
           <p className="text-xs text-slate-300">
             Demo buyurtma raqami: <span className="font-mono text-amber-400 font-bold">{order.id}</span>
           </p>

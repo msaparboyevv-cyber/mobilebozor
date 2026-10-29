@@ -8,7 +8,7 @@ import defaultPhoneImage from '../assets/images/phone_iphone_titanium_1792582841
 interface SellPhoneModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddListing: (newListing: PhoneListing) => void;
+  onAddListing: (newListing: PhoneListing) => boolean;
   usdToUzsRate: number;
 }
 
@@ -124,21 +124,29 @@ export const SellPhoneModal: React.FC<SellPhoneModalProps> = ({
       viewsCount: 1
     };
 
-    onAddListing(newListing);
+    if (!onAddListing(newListing)) {
+      setErrorMessage('E’lon brauzer xotirasiga saqlanmadi. Brauzer xotirasida joy bo‘shatib, qayta urinib ko‘ring.');
+      return;
+    }
     setIsSuccess(true);
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 p-2 backdrop-blur-md sm:items-center sm:p-4">
-      <motion.div 
+      <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={isSuccess ? 'sell-phone-success-title' : 'sell-phone-form-title'}
         initial={{ opacity: 0, scale: 0.94 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.94 }}
-        transition={{ duration: 0.2 }}
+        transition={{ duration: 0.1 }}
         className="relative my-auto max-h-[calc(100dvh-1rem)] w-full max-w-xl overflow-y-auto overscroll-contain rounded-3xl border border-white/[0.1] bg-[#12151e] p-4 text-white shadow-2xl sm:my-4 sm:max-h-[90dvh] sm:p-8"
       >
         <button
+          type="button"
           onClick={onClose}
+          aria-label="E’lon formasini yopish"
           className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
         >
           <X className="w-5 h-5" />
@@ -149,7 +157,7 @@ export const SellPhoneModal: React.FC<SellPhoneModalProps> = ({
             <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center">
               <CheckCircle2 className="w-10 h-10" />
             </div>
-            <h3 className="text-2xl font-bold text-white">E'lon joylashtirildi!</h3>
+            <h3 id="sell-phone-success-title" className="text-2xl font-bold text-white">E'lon joylashtirildi!</h3>
             <p className="text-sm text-slate-300">
               Smartfon ushbu brauzerda saqlanib, katalogga qo‘shildi. U serverga yoki boshqa qurilmalarga yuborilmadi.
             </p>
@@ -168,7 +176,7 @@ export const SellPhoneModal: React.FC<SellPhoneModalProps> = ({
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <h2 className="text-2xl font-black text-white">E'lon joylashtirish</h2>
+              <h2 id="sell-phone-form-title" className="text-2xl font-black text-white">E'lon joylashtirish</h2>
             </div>
 
             {errorMessage && (

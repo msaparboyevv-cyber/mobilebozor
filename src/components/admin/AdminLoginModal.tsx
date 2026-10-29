@@ -65,6 +65,9 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
       <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="admin-login-title"
         initial={{ opacity: 0, scale: 0.93, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.93, y: 10 }}
@@ -75,6 +78,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
           <button
           type="button"
           onClick={onClose}
+          aria-label="Admin oynasini yopish"
           className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
         >
           <X className="w-5 h-5" />
@@ -85,7 +89,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
           <div className="w-14 h-14 rounded-2xl bg-amber-400/15 border border-amber-400/30 text-amber-400 mx-auto flex items-center justify-center">
             <Lock className="w-7 h-7 stroke-[2.2]" />
           </div>
-          <h2 className="text-2xl font-black text-white tracking-tight">{adminPassword ? 'Admin tizimiga kirish' : 'Admin parolini sozlash'}</h2>
+          <h2 id="admin-login-title" className="text-2xl font-black text-white tracking-tight">{adminPassword ? 'Admin tizimiga kirish' : 'Admin parolini sozlash'}</h2>
           <p className="text-xs text-slate-400">
             {adminPassword ? 'Administrator ma’lumotlari bilan tizimga kiring.' : 'Birinchi kirishda admin login orqali kamida 8 belgili parol yarating.'}
           </p>

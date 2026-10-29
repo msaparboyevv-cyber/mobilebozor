@@ -25,6 +25,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
+const adminListingImage = new URL('../../assets/images/hero_smartphones_showcase_1792582840711.jpg', import.meta.url).href;
+
 interface AdminDashboardProps {
   phones: PhoneListing[];
   onAddPhone: (phone: PhoneListing) => void;
@@ -152,7 +154,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         rating: 0,
         dealsCount: 0
       },
-      images: ['/src/assets/images/hero_smartphones_showcase_1792582840711.jpg'],
+      images: [adminListingImage],
       description: `${newBrand} ${newModel} rasmiy kafolat va to'liq UzIMEI bilan.`,
       createdAt: new Date().toISOString(),
       viewsCount: 1
@@ -256,7 +258,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id as 'overview' | 'listings' | 'orders' | 'tradein' | 'settings')}
                 className={`relative px-4 py-3 text-xs sm:text-sm font-bold flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
                   isActive ? 'text-amber-400 font-extrabold' : 'text-slate-400 hover:text-white'
                 }`}
@@ -612,7 +614,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       <td className="p-3.5 text-right">
                         <select
                           value={order.status}
-                          onChange={(e) => onUpdateOrderStatus(order.id, e.target.value as any)}
+                          onChange={(e) => onUpdateOrderStatus(order.id, e.target.value as OrderDetails['status'])}
                           className="py-1 px-2.5 rounded-lg bg-black/40 border border-white/[0.1] text-xs font-bold text-amber-300 focus:outline-none cursor-pointer"
                         >
                           <option value="confirmed" className="bg-[#12151e]">Tasdiqlangan</option>
@@ -671,7 +673,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       <td className="p-3.5 text-right">
                         <select
                           value={req.status}
-                          onChange={(e) => onUpdateTradeInStatus(req.id, e.target.value as any)}
+                          onChange={(e) => onUpdateTradeInStatus(req.id, e.target.value as TradeInRequest['status'])}
                           className="py-1 px-2.5 rounded-lg bg-black/40 border border-white/[0.1] text-xs font-bold text-emerald-300 focus:outline-none cursor-pointer"
                         >
                           <option value="pending" className="bg-[#12151e]">Kutilmoqda</option>

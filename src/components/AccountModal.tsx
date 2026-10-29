@@ -4,6 +4,8 @@ import { Eye, EyeOff, LockKeyhole, Mail, UserRound, X } from 'lucide-react';
 export interface AccountUser {
   name: string;
   email: string;
+  surname?: string;
+  phone?: string;
 }
 
 interface StoredAccount extends AccountUser {
@@ -47,6 +49,8 @@ function getAccounts(): StoredAccount[] {
 export const AccountModal: React.FC<AccountModalProps> = ({ mode: initialMode, account, onClose, onAuthenticated, onLogout }) => {
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
   const [name, setName] = useState('');
+  const [surname, setSurname] = useState('');
+  const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -58,6 +62,8 @@ export const AccountModal: React.FC<AccountModalProps> = ({ mode: initialMode, a
     setError('');
     const normalizedEmail = email.trim().toLowerCase();
     const normalizedName = name.trim();
+    const normalizedSurname = surname.trim();
+    const normalizedPhone = phone.trim();
 
     if (normalizedEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
       setError('To‘g‘ri email manzilini kiriting.');
@@ -69,6 +75,14 @@ export const AccountModal: React.FC<AccountModalProps> = ({ mode: initialMode, a
     }
     if (mode === 'register' && (normalizedName.length < 2 || normalizedName.length > 80)) {
       setError('Ism 2 dan 80 tagacha belgidan iborat bo‘lsin.');
+      return;
+    }
+    if (mode === 'register' && (normalizedSurname.length < 2 || normalizedSurname.length > 80)) {
+      setError('Familiya 2 dan 80 tagacha belgidan iborat bo‘lsin.');
+      return;
+    }
+    if (mode === 'register' && !/^\+?[0-9\s()-]{9,18}$/.test(normalizedPhone)) {
+      setError('To‘g‘ri telefon raqamini kiriting.');
       return;
     }
     if (!window.crypto?.subtle || !window.crypto?.getRandomValues) {
@@ -86,9 +100,9 @@ export const AccountModal: React.FC<AccountModalProps> = ({ mode: initialMode, a
           return;
         }
         const salt = Array.from(window.crypto.getRandomValues(new Uint8Array(16)), (byte) => byte.toString(16).padStart(2, '0')).join('');
-        const user: StoredAccount = { name: normalizedName, email: normalizedEmail, salt, passwordHash: await hashPassword(password, salt) };
+        const user: StoredAccount = { name: normalizedName, surname: normalizedSurname, phone: normalizedPhone, email: normalizedEmail, salt, passwordHash: await hashPassword(password, salt) };
         localStorage.setItem(ACCOUNTS_KEY, JSON.stringify([...accounts, user]));
-        const session = { name: user.name, email: user.email };
+        const session = { name: user.name, surname: user.surname, phone: user.phone, email: user.email };
         localStorage.setItem(SESSION_KEY, JSON.stringify(session));
         onAuthenticated(session);
       } else {
@@ -97,7 +111,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({ mode: initialMode, a
           setError('Email yoki parol noto‘g‘ri.');
           return;
         }
-        const session = { name: existing.name, email: existing.email };
+        const session = { name: existing.name, surname: existing.surname, phone: existing.phone, email: existing.email };
         localStorage.setItem(SESSION_KEY, JSON.stringify(session));
         onAuthenticated(session);
       }
@@ -114,8 +128,12 @@ export const AccountModal: React.FC<AccountModalProps> = ({ mode: initialMode, a
         <button type="button" onClick={onClose} disabled={busy} aria-label="Yopish" className="absolute right-4 top-4 inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white disabled:opacity-50"><X className="h-5 w-5" /></button>
         {account ? (
           <div className="space-y-5 pt-2">
-            <h2 id="account-modal-title" className="text-2xl font-black">Akkaunt</h2>
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4"><p className="font-bold">{account.name}</p><p className="mt-1 break-all text-sm text-slate-400">{account.email}</p></div>
+            <h2 id="account-modal-title" className="text-2xl font-black">Shaxsingiz</h2>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+              <p className="font-bold">{[account.name, account.surname].filter(Boolean).join(' ')}</p>
+              <p className="mt-2 text-sm text-slate-300">{account.phone || 'Telefon raqami kiritilmagan'}</p>
+              <p className="mt-1 break-all text-sm text-slate-400">{account.email}</p>
+            </div>
             <p className="text-xs leading-relaxed text-amber-200/80">Bu demo akkaunt faqat shu brauzer qurilmasida saqlanadi; server hisobi emas.</p>
             <button type="button" onClick={onLogout} className="w-full rounded-xl border border-white/10 px-4 py-3 font-bold hover:border-amber-400/50">Akkauntdan chiqish</button>
           </div>
@@ -126,7 +144,13 @@ export const AccountModal: React.FC<AccountModalProps> = ({ mode: initialMode, a
             <form onSubmit={handleSubmit} aria-busy={busy} className="space-y-4">
               {error && <p role="alert" aria-live="polite" className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-300">{error}</p>}
               {mode === 'register' && <label className="block text-xs font-semibold text-slate-300">Ism
-                <span className="relative mt-1 block"><UserRound className="absolute left-3 top-3 h-4 w-4 text-slate-500" /><input required minLength={2} maxLength={80} autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} className="w-full rounded-xl border border-white/10 bg-[#0d1019] py-2.5 pl-10 pr-3 text-sm text-white outline-none focus:border-amber-400" /></span>
+                <span className="relative mt-1 block"><UserRound className="absolute left-3 top-3 h-4 w-4 text-slate-500" /><input required minLength={2} maxLength={80} autoComplete="given-name" value={name} onChange={(event) => setName(event.target.value)} className="min-h-11 w-full rounded-xl border border-white/10 bg-[#0d1019] py-2.5 pl-10 pr-3 text-base text-white outline-none focus:border-amber-400" /></span>
+              </label>}
+              {mode === 'register' && <label className="block text-xs font-semibold text-slate-300">Familiya
+                <span className="relative mt-1 block"><UserRound className="absolute left-3 top-3 h-4 w-4 text-slate-500" /><input required minLength={2} maxLength={80} autoComplete="family-name" value={surname} onChange={(event) => setSurname(event.target.value)} className="min-h-11 w-full rounded-xl border border-white/10 bg-[#0d1019] py-2.5 pl-10 pr-3 text-base text-white outline-none focus:border-amber-400" /></span>
+              </label>}
+              {mode === 'register' && <label className="block text-xs font-semibold text-slate-300">Telefon raqami
+                <input required type="tel" inputMode="tel" autoComplete="tel" maxLength={18} placeholder="+998 90 123 45 67" value={phone} onChange={(event) => setPhone(event.target.value)} className="mt-1 min-h-11 w-full rounded-xl border border-white/10 bg-[#0d1019] px-3 py-2.5 text-base text-white outline-none focus:border-amber-400" />
               </label>}
               <label className="block text-xs font-semibold text-slate-300">Email
                 <span className="relative mt-1 block"><Mail className="absolute left-3 top-3 h-4 w-4 text-slate-500" /><input required type="email" maxLength={254} autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} className="w-full rounded-xl border border-white/10 bg-[#0d1019] py-2.5 pl-10 pr-3 text-sm text-white outline-none focus:border-amber-400" /></span>

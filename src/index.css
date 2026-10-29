@@ -67,6 +67,33 @@
   }
 }
 
+.compare-phone-grid {
+  display: grid;
+  grid-auto-rows: 1fr;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.compare-desktop-table {
+  display: none;
+}
+
+@media (min-width: 360px) {
+  .compare-phone-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1000px) {
+  .compare-phone-grid,
+  .compare-mobile-rows {
+    display: none;
+  }
+
+  .compare-desktop-table {
+    display: block;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

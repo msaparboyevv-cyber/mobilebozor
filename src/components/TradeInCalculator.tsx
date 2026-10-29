@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { PhoneBrand, StorageOption, PhoneCategory } from '../types';
+import { PhoneBrand, StorageOption, TradeInRequest } from '../types';
 import { RefreshCw, CheckCircle2, ShieldCheck, Zap, Calculator } from 'lucide-react';
 import { ALL_MODELS_BY_BRAND } from '../data/mockPhones';
 import { motion, AnimatePresence } from 'motion/react';
@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'motion/react';
 interface TradeInCalculatorProps {
   onTradeInSuccess?: () => void;
   onExploreCatalog?: () => void;
-  onSubmitTradeIn?: (req: any) => void;
+  onSubmitTradeIn?: (req: TradeInRequest) => void;
   usdToUzsRate: number;
 }
 
@@ -209,7 +209,7 @@ export const TradeInCalculator: React.FC<TradeInCalculatorProps> = ({
                 <button
                   key={opt.id}
                   type="button"
-                  onClick={() => setScreenCondition(opt.id as any)}
+                  onClick={() => setScreenCondition(opt.id as 'perfect' | 'minor' | 'cracked')}
                   className={`py-2.5 px-3 text-xs font-semibold rounded-xl border transition-all cursor-pointer ${
                     screenCondition === opt.id
                       ? 'bg-amber-400/20 border-amber-400 text-amber-300'
@@ -236,7 +236,7 @@ export const TradeInCalculator: React.FC<TradeInCalculatorProps> = ({
                 <button
                   key={opt.id}
                   type="button"
-                  onClick={() => setBodyCondition(opt.id as any)}
+                  onClick={() => setBodyCondition(opt.id as 'perfect' | 'minor' | 'heavy')}
                   className={`py-2.5 px-3 text-xs font-semibold rounded-xl border transition-all cursor-pointer ${
                     bodyCondition === opt.id
                       ? 'bg-amber-400/20 border-amber-400 text-amber-300'
@@ -263,7 +263,7 @@ export const TradeInCalculator: React.FC<TradeInCalculatorProps> = ({
                 <button
                   key={opt.id}
                   type="button"
-                  onClick={() => setBatteryLevel(opt.id as any)}
+                  onClick={() => setBatteryLevel(opt.id as 'high' | 'medium' | 'low')}
                   className={`py-2.5 px-3 text-xs font-mono font-bold rounded-xl border transition-all cursor-pointer ${
                     batteryLevel === opt.id
                       ? 'bg-amber-400/20 border-amber-400 text-amber-300'

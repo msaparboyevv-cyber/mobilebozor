@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PhoneListing, CartItem, OrderDetails, TradeInRequest } from './types';
+import { PhoneListing, CartItem, OrderDetails, TradeInRequest, PhoneCategory } from './types';
 import { INITIAL_PHONE_LISTINGS, INITIAL_ORDERS, INITIAL_TRADE_IN_REQUESTS, USD_TO_UZS_RATE, CITIES_OF_UZBEKISTAN } from './data/mockPhones';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
@@ -16,7 +16,7 @@ import { AdminDashboard } from './components/admin/AdminDashboard';
 import { AdminLoginModal } from './components/admin/AdminLoginModal';
 import { AccountModal, AccountUser } from './components/AccountModal';
 import { WelcomeScreen } from './components/WelcomeScreen';
-import { ArrowLeftRight, CheckCircle2, Sparkles, PlusCircle, ShoppingBag, Heart } from 'lucide-react';
+import { ArrowLeftRight, CheckCircle2, Sparkles, PlusCircle, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
@@ -51,7 +51,7 @@ export default function App() {
   const [selectedCity, setSelectedCity] = useState<string>('Barcha viloyatlar');
   const [selectedBrand, setSelectedBrand] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<any>('all');
+  const [selectedCategory, setSelectedCategory] = useState<PhoneCategory | 'all'>('all');
   const [isCatalogModalOpen, setIsCatalogModalOpen] = useState(false);
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -162,6 +162,7 @@ export default function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [lastOrder, setLastOrder] = useState<OrderDetails | null>(null);
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -171,6 +172,21 @@ export default function App() {
     setTimeout(() => {
       setToastMessage(null);
     }, 2800);
+  };
+
+  useEffect(() => {
+    if (!isSearchOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsSearchOpen(false);
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isSearchOpen]);
+
+  const showSearchResults = () => {
+    setIsSearchOpen(false);
+    setActiveTab('buy');
+    window.setTimeout(() => document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' }), 80);
   };
 
   // City Phone Counts
@@ -200,7 +216,7 @@ export default function App() {
     showToast(brand === 'all' ? "Barcha brendlar" : `📱 ${brand} brendidagi modellar`);
   };
 
-  const handleSelectCategory = (cat: string) => {
+  const handleSelectCategory = (cat: PhoneCategory | 'all') => {
     setSelectedCategory(cat);
     setActiveTab('buy');
     showToast(cat === 'all' ? "Barcha turlar" : `⚡ ${cat.toUpperCase()} toifasidagi modellar`);
@@ -304,9 +320,18 @@ export default function App() {
     setComparingPhones((prev) => prev.filter((p) => p.id !== phoneId));
   };
 
-  const handleAddNewListing = (newListing: PhoneListing) => {
-    setPhones((prev) => [newListing, ...prev]);
+  const handleAddNewListing = (newListing: PhoneListing): boolean => {
+    const updatedListings = [newListing, ...phones];
+    try {
+      localStorage.setItem('mb_phone_listings', JSON.stringify(updatedListings));
+    } catch (error) {
+      console.error('E’lonni saqlab bo‘lmadi', error);
+      showToast('E’lon brauzer xotirasiga saqlanmadi. Xotirada joy borligini tekshiring.');
+      return false;
+    }
+    setPhones(updatedListings);
     showToast("E'loningiz qo'shildi!");
+    return true;
   };
 
   const handleOrderSuccess = (order: OrderDetails) => {
@@ -401,7 +426,7 @@ export default function App() {
 
   // Otherwise, render Storefront
   return (
-    <div className="flex min-h-dvh flex-col bg-[#0b0d13] pb-20 text-[#f1f3f7] sm:pb-0">
+    <div className="flex min-h-dvh flex-col bg-[#0b0d13] pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))] text-[#f1f3f7]">
       
       {/* Header */}
       <Header
@@ -411,11 +436,36 @@ export default function App() {
             setIsCompareModalOpen(true);
           } else {
             setActiveTab(tab);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            window.scrollTo({ top: 0, behavior: 'instant' });
           }
         }}
         cartCount={cart.reduce((sum, item) => sum + item.quantity, 0)}
-        openCart={() => setIsCartOpen(true)}
+        favoritesCount={favoriteIds.length}
+        orders={orders}
+        openCart={() => {
+          setIsWishlistOpen(false);
+          setIsCartOpen(true);
+        }}
+        openWishlist={() => {
+          setIsCartOpen(false);
+          setIsWishlistOpen(true);
+        }}
+        openSearch={() => {
+          setActiveTab('buy');
+          setIsSearchOpen(true);
+        }}
+        openHome={() => {
+          setActiveTab('buy');
+          setSelectedPhone(null);
+          setIsSellModalOpen(false);
+          setIsCartOpen(false);
+          setIsWishlistOpen(false);
+          setIsCompareModalOpen(false);
+          setIsSearchOpen(false);
+          setIsAccountModalOpen(false);
+          setIsLoginModalOpen(false);
+          window.scrollTo({ top: 0, behavior: 'instant' });
+        }}
         openSellModal={() => setIsSellModalOpen(true)}
         currency={currency}
         toggleCurrency={() => setCurrency((c) => (c === 'UZS' ? 'USD' : 'UZS'))}
@@ -429,6 +479,8 @@ export default function App() {
         }}
         onOpenAccount={(mode) => { setAccountModalMode(mode); setIsAccountModalOpen(true); }}
         accountName={accountUser?.name}
+        accountSurname={accountUser?.surname}
+        accountPhone={accountUser?.phone}
         onLogoutAccount={() => { localStorage.removeItem('mb_account_session'); setAccountUser(null); }}
         selectedCity={selectedCity}
         onSelectCity={handleSelectCity}
@@ -582,32 +634,65 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      <div className="fixed inset-x-3 bottom-[max(env(safe-area-inset-bottom),0.75rem)] z-40 mx-auto flex w-[calc(100%-1.5rem)] max-w-[22rem] items-center justify-center gap-2 sm:inset-x-auto sm:bottom-4 sm:right-4 sm:mx-0 sm:w-auto sm:max-w-none">
-        <motion.button
-          type="button"
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
-          onClick={() => setIsWishlistOpen(true)}
-          aria-label={`Istaklarni ochish, ${favoriteIds.length} ta telefon`}
-          className="inline-flex min-h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-full border border-rose-300/50 bg-[#171923] px-3 text-sm font-extrabold text-white shadow-xl shadow-black/40 transition hover:border-rose-300 hover:bg-[#222431] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300 sm:flex-none sm:px-4"
-        >
-          <Heart className="h-5 w-5 text-rose-400" aria-hidden="true" />
-          <span>Istaklar</span>
-          {favoriteIds.length > 0 && <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-rose-400/20 px-1.5 text-xs font-black tabular-nums text-rose-200">{favoriteIds.length}</span>}
-        </motion.button>
-        <motion.button
-          type="button"
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
-          onClick={() => setIsCartOpen(true)}
-          aria-label={`Savatni ochish, ${cart.reduce((sum, item) => sum + item.quantity, 0)} ta mahsulot`}
-          className="inline-flex min-h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-full border border-amber-200/70 bg-amber-400 px-3 text-sm font-extrabold text-black shadow-xl shadow-black/40 transition hover:bg-amber-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:flex-none sm:px-4"
-        >
-          <ShoppingBag className="h-5 w-5" aria-hidden="true" />
-          <span>Savat</span>
-          {cart.some((item) => item.quantity > 0) && <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-black/15 px-1.5 text-xs font-black tabular-nums">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>}
-        </motion.button>
-      </div>
+      <AnimatePresence>
+        {isSearchOpen && (
+          <motion.div
+            className="fixed inset-0 z-[70] flex items-start justify-center bg-black/70 px-4 pt-[15vh] backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.08 }}
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) setIsSearchOpen(false);
+            }}
+          >
+            <motion.form
+              role="search"
+              aria-label="Telefon qidiruvi"
+              onSubmit={(event) => {
+                event.preventDefault();
+                showSearchResults();
+              }}
+              initial={{ opacity: 0, y: 12, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.98 }}
+              transition={{ duration: 0.1 }}
+              className="w-full max-w-xl rounded-2xl border border-white/10 bg-[#151922] p-4 shadow-2xl sm:p-5"
+            >
+              <label htmlFor="mobile-search-query" className="mb-3 block text-sm font-bold text-white">
+                Telefon qidirish
+              </label>
+              <div className="flex items-center gap-2">
+                <div className="relative min-w-0 flex-1">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-amber-400" aria-hidden="true" />
+                  <input
+                    id="mobile-search-query"
+                    type="search"
+                    autoFocus
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder="Brend yoki model nomi..."
+                    className="min-h-12 w-full rounded-xl border border-white/10 bg-black/30 py-3 pl-10 pr-3 text-base text-white placeholder:text-slate-400 focus:border-amber-400 focus:outline-none"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="min-h-12 shrink-0 rounded-xl bg-amber-400 px-4 text-sm font-bold text-black transition hover:bg-amber-300"
+                >
+                  Qidirish
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSearchOpen(false)}
+                className="mt-3 min-h-10 w-full rounded-xl border border-white/10 text-sm font-medium text-slate-300 transition hover:bg-white/5 hover:text-white"
+              >
+                Yopish
+              </button>
+            </motion.form>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Floating Compare Button */}
       {comparingPhones.length > 0 && (

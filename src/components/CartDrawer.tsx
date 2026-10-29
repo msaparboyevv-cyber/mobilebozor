@@ -78,20 +78,21 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/75 backdrop-blur-sm">
-      <div className="relative flex h-[100dvh] w-full max-w-md flex-col border-l border-[#242939] bg-[#13161f] pb-[env(safe-area-inset-bottom)] text-white shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-end justify-end bg-black/75 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))]">
+      <div role="dialog" aria-modal="true" aria-labelledby="cart-drawer-title" className="relative flex h-full w-full max-w-md flex-col border-l border-[#242939] bg-[#13161f] text-white shadow-2xl">
         
         {/* Header */}
         <div className="flex items-center justify-between gap-2 border-b border-[#212534] bg-[#0e1017] px-3 py-3 sm:px-5 sm:py-4">
           <div className="flex min-w-0 items-center gap-2">
             <ShoppingBag className="w-5 h-5 text-amber-400" />
-            <h3 className="min-w-0 break-words text-sm font-bold text-white sm:text-base">Savat va rasmiylashtirish</h3>
+            <h3 id="cart-drawer-title" className="min-w-0 break-words text-sm font-bold text-white sm:text-base">Savat va rasmiylashtirish</h3>
             <span className="text-xs bg-[#1f2434] text-slate-300 font-mono px-2 py-0.5 rounded-full">
               {items.reduce((acc, cur) => acc + cur.quantity, 0)}
             </span>
           </div>
           <button
             onClick={onClose}
+            aria-label="Savat oynasini yopish"
             className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-[#1e2332] transition-colors"
           >
             <X className="w-5 h-5" />
@@ -116,19 +117,19 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
             </button>
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto p-5 space-y-6">
+          <div className="flex-1 space-y-4 overflow-y-auto p-3 sm:p-4">
             
             {/* Items List */}
-            <div className="space-y-3">
-              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            <div className="space-y-2">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                 Tanlangan mahsulotlar:
               </div>
               {items.map((item) => (
                 <div
                   key={item.phone.id}
-                  className="p-3 rounded-xl bg-[#181d28] border border-[#272d3e] flex items-center gap-3"
+                  className="flex items-center gap-2 rounded-xl border border-[#272d3e] bg-[#181d28] p-2"
                 >
-                  <div className="w-16 h-16 rounded-lg bg-[#11141c] p-1 shrink-0 flex items-center justify-center">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#11141c] p-1">
                     <img
                       src={item.phone.images[0]}
                       alt={item.phone.title}
@@ -137,14 +138,14 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     />
                   </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-bold text-white truncate">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[11px] font-bold text-white sm:text-xs">
                       {item.phone.model}
                     </div>
-                    <div className="text-[11px] text-slate-400">
+                    <div className="truncate text-[10px] text-slate-400">
                       {item.phone.storage} · {item.phone.color}
                     </div>
-                    <div className="text-xs font-bold text-amber-400 font-mono mt-0.5">
+                    <div className="mt-0.5 text-[11px] font-bold text-amber-400 sm:text-xs">
                       {currency === 'UZS'
                         ? `${formatPrice(item.phone.priceUzs)} so'm`
                         : `$${formatPrice(item.phone.priceUsd)}`
@@ -152,25 +153,28 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex flex-col items-end gap-1.5">
+                  <div className="flex shrink-0 flex-col items-end gap-1">
                     <button
                       onClick={() => onRemoveItem(item.phone.id)}
-                      className="text-slate-500 hover:text-rose-400 p-1"
+                      aria-label={`${item.phone.model}ni savatdan o‘chirish`}
+                      className="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 hover:bg-white/5 hover:text-rose-400"
                       title="O'chirish"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
-                    <div className="flex items-center gap-1.5 bg-[#12151e] border border-[#2b3243] rounded px-1.5 py-0.5 text-xs">
+                    <div className="flex h-7 items-center gap-1 rounded border border-[#2b3243] bg-[#12151e] px-1.5 text-xs">
                       <button
                         onClick={() => onUpdateQuantity(item.phone.id, -1)}
-                        className="text-slate-400 hover:text-white font-bold"
+                        aria-label={`${item.phone.model} sonini kamaytirish`}
+                        className="flex h-6 w-5 items-center justify-center font-bold text-slate-400 hover:text-white"
                       >
                         -
                       </button>
-                      <span className="font-mono">{item.quantity}</span>
+                      <span className="min-w-3 text-center font-mono">{item.quantity}</span>
                       <button
                         onClick={() => onUpdateQuantity(item.phone.id, 1)}
-                        className="text-slate-400 hover:text-white font-bold"
+                        aria-label={`${item.phone.model} sonini oshirish`}
+                        className="flex h-6 w-5 items-center justify-center font-bold text-slate-400 hover:text-white"
                       >
                         +
                       </button>
@@ -297,7 +301,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     <button
                       key={p.id}
                       type="button"
-                      onClick={() => setPaymentMethod(p.id as any)}
+                      onClick={() => setPaymentMethod(p.id as OrderDetails['paymentMethod'])}
                       disabled={p.id !== 'cash_on_delivery'}
                       aria-disabled={p.id !== 'cash_on_delivery'}
                       className={`p-2 rounded-lg border text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${

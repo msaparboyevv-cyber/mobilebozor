@@ -39,7 +39,7 @@ export const PhoneCard: React.FC<PhoneCardProps> = ({
       viewport={{ once: true, margin: '-40px' }}
       whileHover={{ y: -4 }}
       transition={{ duration: 0.22, ease: 'easeOut' }}
-      className={`group relative flex h-full min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-[#12151e] shadow-lg transition-colors hover:border-amber-400/40 hover:bg-[#151926] focus-within:border-amber-400/60 ${compact ? 'flex-row items-center' : 'flex-col'}`}
+      className="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#12151e] shadow-lg transition-colors hover:border-amber-400/40 hover:bg-[#151926] focus-within:border-amber-400/60"
     >
       <button
         type="button"
@@ -48,7 +48,7 @@ export const PhoneCard: React.FC<PhoneCardProps> = ({
         className="absolute inset-0 z-0 rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-amber-300"
       />
 
-      <div className={`relative z-10 shrink-0 overflow-hidden bg-gradient-to-b from-[#1a2030] to-[#0d1018] p-3 pointer-events-none ${compact ? 'h-24 w-24 sm:h-28 sm:w-28' : 'aspect-[4/3] w-full'}`}>
+      <div className={`pointer-events-none relative z-10 h-28 w-full shrink-0 overflow-hidden bg-gradient-to-b from-[#1a2030] to-[#0d1018] p-2 sm:h-32 ${compact ? 'sm:h-28' : ''}`}>
         {showImage ? (
           <img
             src={imageSrc}
@@ -65,6 +65,17 @@ export const PhoneCard: React.FC<PhoneCardProps> = ({
           </div>
         )}
 
+        {phone.uzImeiRegistered === true && (
+          <span className="absolute bottom-2 left-2 z-10 rounded-md border border-emerald-300/40 bg-emerald-950/85 px-1.5 py-1 text-[9px] font-bold leading-none text-emerald-200 shadow-sm sm:text-[10px]">
+            ✓ IMEI tasdiqlangan
+          </span>
+        )}
+        {phone.uzImeiRegistered === false && (
+          <span className="absolute bottom-2 left-2 z-10 rounded-md border border-amber-300/40 bg-amber-950/90 px-1.5 py-1 text-[9px] font-bold leading-none text-amber-200 shadow-sm sm:text-[10px]">
+            IMEI ro‘yxatdan o‘tmagan
+          </span>
+        )}
+
         <div className="pointer-events-auto absolute right-3 top-3 z-10 flex gap-2">
           {!compact && <button
             type="button"
@@ -79,30 +90,29 @@ export const PhoneCard: React.FC<PhoneCardProps> = ({
         </div>
       </div>
 
-      <div className={`relative z-10 flex min-w-0 flex-1 flex-col pointer-events-none ${compact ? 'gap-1.5 p-3' : 'gap-2.5 p-4'}`}>
-        <p className="truncate text-xs font-bold text-amber-300">{phone.brand} <span className="text-slate-500">·</span> {phone.storage}</p>
-        <h3 className={`break-words font-bold leading-5 text-white ${compact ? 'line-clamp-2 text-sm' : 'line-clamp-2 min-h-10 text-base'}`}>{phone.model}</h3>
-        <p className={`break-words font-black leading-tight tabular-nums text-white ${compact ? 'text-base' : 'text-xl'}`} aria-label={`Narxi ${formatListingPrice(phone, currency)}`}>
+      <div className={`relative z-10 flex min-w-0 flex-1 flex-col pointer-events-none ${compact ? 'gap-1 p-2' : 'gap-2 p-3'}`}>
+        <p className="h-4 truncate text-[10px] font-medium leading-4 text-slate-400 sm:text-[11px]">{phone.brand} <span className="text-slate-500">·</span> {phone.storage}</p>
+        <h3 className="line-clamp-2 min-h-9 break-words text-xs font-bold leading-[18px] text-white sm:text-sm">{phone.model}</h3>
+        <p className="min-h-8 break-words text-xs font-black leading-4 tabular-nums text-white [overflow-wrap:anywhere] sm:text-sm" aria-label={`Narxi ${formatListingPrice(phone, currency)}`}>
           {formatListingPrice(phone, currency)}
         </p>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-[11px] font-semibold text-slate-200">
+        <div className="flex h-5 min-w-0 items-center">
+          <span className="max-w-full truncate rounded-md border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] font-semibold leading-4 text-slate-300">
             {getListingConditionLabel(phone.condition)}
           </span>
-          {phone.uzImeiRegistered && <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-300">IMEI ro‘yxatdan o‘tgan</span>}
         </div>
-        <div className="mt-auto flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 border-t border-white/[0.08] pt-2 text-xs text-slate-400">
-          {phone.city && <span className="inline-flex min-w-0 items-center gap-1"><MapPin className="h-3.5 w-3.5 shrink-0 text-amber-400" /><span className="truncate">{phone.city}</span></span>}
-          {dateLabel && <span className="inline-flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5 shrink-0" />{dateLabel}</span>}
+        <div className="mt-auto flex min-h-7 min-w-0 items-center justify-between gap-2 border-t border-white/[0.08] pt-2 text-[10px] text-slate-400 sm:text-[11px]">
+          {phone.city && <span className="inline-flex min-w-0 items-center gap-1"><MapPin className="h-3 w-3 shrink-0 text-amber-400" /><span className="truncate">{phone.city}</span></span>}
+          {dateLabel && <span className="inline-flex shrink-0 items-center gap-1"><CalendarDays className="h-3 w-3 shrink-0" />{dateLabel}</span>}
         </div>
-        <div className="pointer-events-auto mt-1 grid grid-cols-[1fr_auto] gap-2">
+        <div className="pointer-events-auto grid grid-cols-[minmax(0,1fr)_2.5rem] gap-2">
           <button
           type="button"
           onClick={() => onAddToCart(phone)}
-            className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-amber-400 px-3 py-2.5 font-bold text-black transition-colors hover:bg-amber-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200 ${compact ? 'text-xs' : 'text-sm'}`}
+            className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-amber-400 px-2 text-[11px] font-bold text-black transition-colors hover:bg-amber-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200 sm:text-xs"
         >
-          <ShoppingBag className="h-4 w-4" aria-hidden="true" />
-          {compact ? 'Savatga' : 'Savatga qo‘shish'}
+          <ShoppingBag className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          Savatga
         </button>
           <button
             type="button"
@@ -110,7 +120,7 @@ export const PhoneCard: React.FC<PhoneCardProps> = ({
             aria-pressed={isFavorite}
             aria-label={isFavorite ? `${phone.model}ni istaklardan olib tashlash` : `${phone.model}ni istaklarga qo‘shish`}
             title={isFavorite ? 'Istaklardan olib tashlash' : 'Istaklarga qo‘shish'}
-            className={`inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-xl border px-3 text-xs font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300 ${isFavorite ? 'border-rose-400/40 bg-rose-500/15 text-rose-300' : 'border-white/10 bg-white/[0.05] text-slate-200 hover:border-rose-400/40 hover:text-rose-300'}`}
+            className={`inline-flex h-10 w-10 items-center justify-center rounded-lg border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300 ${isFavorite ? 'border-rose-400/40 bg-rose-500/15 text-rose-300' : 'border-white/10 bg-white/[0.05] text-slate-200 hover:border-rose-400/40 hover:text-rose-300'}`}
           >
             <Heart className={`h-4 w-4 ${isFavorite ? 'fill-current' : ''}`} aria-hidden="true" />
           </button>

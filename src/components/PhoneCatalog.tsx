@@ -16,8 +16,6 @@ import {
   SlidersHorizontal,
   ChevronDown,
   LayoutGrid,
-  Play,
-  Pause,
   MapPin,
   ArrowRight,
   X,
@@ -118,7 +116,6 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
   
   // View mode: 'grid' or 'stream' (ketma-ket pastga suriluvchi oqim)
   const [viewMode, setViewMode] = useState<'grid' | 'stream'>('grid');
-  const [isAutoScrolling, setIsAutoScrolling] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState<number>(0);
   const streamContainerRef = useRef<HTMLDivElement>(null);
 
@@ -189,24 +186,6 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
     () => getPhoneRecommendations(phones, viewCounts, 4, filteredPhones),
     [phones, filteredPhones, viewCounts]
   );
-
-  // Ketma-ket pastga avtomatik surilish (Auto-slide down in stream mode)
-  useEffect(() => {
-    if (!isAutoScrolling || viewMode !== 'stream' || filteredPhones.length === 0) return;
-
-    const interval = setInterval(() => {
-      setHighlightedIndex((prev) => {
-        const next = (prev + 1) % filteredPhones.length;
-        const targetEl = document.getElementById(`stream-phone-${filteredPhones[next]?.id}`);
-        if (targetEl) {
-          targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        return next;
-      });
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [isAutoScrolling, viewMode, filteredPhones]);
 
   const resetFilters = () => {
     updateSearchQuery('');
@@ -286,10 +265,7 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
             </button>
 
             <button
-              onClick={() => {
-                setViewMode('stream');
-                setIsAutoScrolling(true);
-              }}
+              onClick={() => setViewMode('stream')}
               title="Ketma-ket pastga suriladigan oqim"
               className={`inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg p-2 text-xs font-bold transition-colors ${
                 viewMode === 'stream'
@@ -306,7 +282,7 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
           <select
             aria-label="Saralash"
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
+            onChange={(e) => setSortBy(e.target.value as PhoneSort)}
             className="min-h-11 max-w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-xs font-semibold text-slate-200 focus:border-amber-400 focus:outline-none"
           >
             <option value="newest" className="bg-[#12151e] text-white">Yangi e'lonlar</option>
@@ -422,7 +398,7 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
             </div>
             <span className="text-xs text-slate-400">{recommendations.phones.length} ta</span>
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 sm:gap-5">
+          <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 xl:grid-cols-4">
             {recommendations.phones.map((phone) => (
               <PhoneCard
                 key={`featured-${phone.id}`}
@@ -454,18 +430,6 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
             </div>
 
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => setIsAutoScrolling(!isAutoScrolling)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors ${
-                  isAutoScrolling
-                    ? 'bg-amber-400 text-black'
-                    : 'bg-white/10 text-slate-300 hover:text-white'
-                }`}
-              >
-                {isAutoScrolling ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                <span>{isAutoScrolling ? 'Avto-surilish to\'xtatish' : 'Avto-surilishni yoqish'}</span>
-              </button>
-
               <button
                 onClick={handleScrollToNextPhone}
                 className="px-3.5 py-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
@@ -556,7 +520,7 @@ export const PhoneCatalog: React.FC<PhoneCatalogProps> = ({
       {showPhoneModels && viewMode === 'grid' && (
         <>
           {filteredPhones.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-3 xl:grid-cols-4">
               {filteredPhones.map((phone) => (
                 <PhoneCard
                   key={phone.id}
